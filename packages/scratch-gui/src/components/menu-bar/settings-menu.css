@@ -1,0 +1,63 @@
+.icon {
+    width: 1.5rem;
+}
+
+/* Unused? */
+.color-mode-label {
+    flex: 1;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    width: 100%;
+    padding: 0;
+
+    background: transparent;
+    border: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+    color: inherit;
+}
+
+.check {
+    margin: 0 .25rem 0 0;
+    visibility: hidden;
+}
+
+[dir="rtl"] .check {
+    margin: 0 0 0 .25rem;
+}
+
+.selected {
+    visibility: visible;
+}
+
+.submenu-label {
+    flex: 1;
+}
+
+.dropdown-label {
+    margin: 0 0.5rem 0 0.25rem;
+}
+
+[dir="rtl"] .dropdown-label {
+    margin: 0 0.25rem 0 0.5rem;
+}
+
+.expand-caret {
+    transform: rotate(-90deg);
+}
+
+[dir="rtl"] .expand-caret {
+    transform: rotate(90deg);
+}
+
+@media only screen and (max-width: 1024px) {
+    .dropdown-label {
+        display: none;
+    }
+}
