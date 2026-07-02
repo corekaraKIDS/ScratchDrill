@@ -1,10 +1,15 @@
 (function(Scratch) {
     'use strict';
 
-    // 【重要】非サンドボックスモードのチェック
-    if (!Scratch.vm) {
-        alert("【自動採点ドリル】\nこの拡張機能は「サンドボックスなし」で読み込む必要があります。\nファイルの読み込み時に「サンドボックスなしで拡張機能を実行する」にチェックを入れてください。");
-        return;
+    // サンドボックスモードのチェック
+    if (typeof window === 'undefined' || !Scratch.vm) {
+        const errorMsg = "【自動採点ドリル】\nこの拡張機能は「サンドボックスなし」で読み込む必要があります。\nURLに「?unsandboxed-extension=」が含まれているか確認してください。";
+        // 1. もし画面がある環境（通常のブラウザ画面）ならアラートを出す
+        if (typeof window !== 'undefined') {
+            alert(errorMsg);
+        }
+        // 2. 画面がない環境（サンドボックス内）でも、TurboWarpのUIにエラーを強制表示させる
+        throw new Error(errorMsg);
     }
 
     const runtime = Scratch.vm.runtime;
