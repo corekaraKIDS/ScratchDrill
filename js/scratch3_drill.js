@@ -119,11 +119,11 @@
 
         askCurrentQuestion (args, util) {
             if (this.currentQuestionIndex >= this.questions.length) {
-                this.sayFromJudge('全問正解！すべての問題をクリアしたよ！おめでとう！');
+                this.sayFromJudge('ぜんもんせいかい！おめでとう！');
                 return;
             }
             const q = this.questions[this.currentQuestionIndex];
-            this.sayFromJudge(`【第 ${q.id} 問】\n${q.title}`);
+            this.sayFromJudge(`【だい ${q.id} もん】\n${q.title}`);
         }
 
         sayFromJudge (text) {
@@ -157,12 +157,12 @@
             const activeJudge = judge || util.target;
 
             if (!cat) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが見つかりません');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが みつかりません');
                 return;
             }
 
             if (this.currentQuestionIndex >= this.questions.length) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'すべての問題はクリア済みだよ！');
+                this.runtime.emit('SAY', activeJudge, 'say', 'すべてのもんだいをクリアしています');
                 return;
             }
 
@@ -178,7 +178,7 @@
             }
 
             if (!hatBlockId) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから書き始める」ブロックを置いて、その下にプログラムを作ってね！');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、そのしたにプログラムをつくってね！');
                 return;
             }
 
@@ -193,14 +193,14 @@
             const isCorrect = currentQuestion.validate(userSequence, blocks);
 
             if (isCorrect) {
-                this.runtime.emit('SAY', activeJudge, 'say', '正解！次の問題に進むよ！');
+                this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！つぎにすすむよ！');
                 this.currentQuestionIndex++;
                 
                 setTimeout(() => {
                     this.askCurrentQuestion();
                 }, 2500);
             } else {
-                this.runtime.emit('SAY', activeJudge, 'say', '残念！もう一度確認してみてね');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！もういちど かくにんしてみてね');
             }
         }
     }
