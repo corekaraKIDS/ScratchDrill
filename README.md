@@ -6,23 +6,33 @@ Scratchの理解度向上のためのドリル教材
 - 漢字を使わずに制作する。
 
 ## 使い方
-- 拡張機能込みで Turbowarp を起動する。
-    - URL内でこのプロジェクトの `./js/scratch3_drill.js` と `./sb3/scratch3_drill.sb3` を指定し、呼び出す。
-    - リンクはこのようになる: https://turbowarp.org/editor?project_url=https://corekarakids.github.io/ScratchDrill/sb3/scratch3_drill.sb3&unsandboxed-extension=https://corekarakids.github.io/ScratchDrill/js/scratch3_drill.js
-    - サンドボックス環境を使わないことを許可する。
-    - プログラムを書き込むネコ、テストランボタン、審査員の3つのスプライトが含まれている。
+- 拡張機能つきプロジェクトが入った状態で Turbowarp を起動する。
+    - URL内でこのプロジェクトの `./sb3/scratch3_drill.sb3` を指定し、呼び出す。
+    - リンクはこのようになる: https://turbowarp.org/editor?project_url=https://corekarakids.github.io/ScratchDrill/sb3/scratch3_drill.sb3
+- **サンドボックス環境を使わないことを許可**する。
+- 猫（ここにプログラムを書き込む）、テストランボタン、審査員の3つのスプライトが含まれている。
 - 緑の旗を押すとドリルが開始され、設問が順番に出題される。
     - 審査員のセリフにしたがって進める
-    - ネコに書いたプログラムは、テストランボタンでテストランすることができる
+    - 猫に書いたプログラムは、テストランボタンでテストランすることができる
     - 審査員スプライトをクリックすると正誤判定がなされる
 
 ## 開発者の方へ
 - ご自身を Collaborator に招待してください。
 - プロジェクトを pull して、適当にブランチを切って開発してください。
 - `./js/scratch3_drill.js` 内の `this.questions` で設問を作成できます。
-- 開発したものを [このリンク](https://turbowarp.org/editor?project_url=https://corekarakids.github.io/ScratchDrill/sb3/scratch3_drill.sb3&unsandboxed-extension=https://corekarakids.github.io/ScratchDrill/js/scratch3_drill.js) で使うには main ブランチにプッシュしなければなりません。テストする場合は、以下の手順を踏んでください。
+- 開発したものを [このリンク](https://turbowarp.org/editor?project_url=https://corekarakids.github.io/ScratchDrill/sb3/scratch3_drill.sb3) で使うには main ブランチにプッシュしなければなりません。テストする場合は、以下の手順を踏んでください。
     1. [Turbowarp エディタ](https://turbowarp.org/editor) を開く
     1. 左のメニューバーの最下部「拡張機能」から「カスタム拡張機能」を選択
     1. 「ファイル」のモードで、開発中のjsファイルをドラッグ＆ドロップし、**「サンドボックスなしで実行」を選択**
-    1. 拡張機能の読み込みが完了したら、sb3ファイルを読み込む。
-- プルリクエストを送り、 GitHub 上の main ブランチに反映してください。  
+    1. 拡張機能の読み込みが完了したら、「ファイル→コンピューターから読み込む」から `sb3/drill_no_ext.sb3` を読み込む \
+        ※拡張機能が読み込まれた状態のsb3データには、その時点での拡張機能が焼き付いており、拡張機能の変更が反映されません。**拡張機能が含まれていないsb3**を使う必要があります。
+    1. スプライトを準備する \
+        ※ここが煩雑なのでなんとかしたかったのですが、試行錯誤の末諦めました。**js更新のたびにスプライトの準備が必要になります。**
+        - ねこ：「ここからかきはじめる」
+        - テストラン：「このスプライトが押されたとき：テストランする」
+        - しんさいん：「このスプライトが押されたとき：こたえあわせをする」
+    1. 緑の旗を押して動作確認
+    1. ファイルを `./sb3/scratch3_drill.sb3` として**上書き保存**\
+        ※`sb3/drill_no_ext.sb3` に保存しないように注意してください。 \
+        ※これによって、拡張機能の内容もsb3に入ります。
+- 開発した内容はコミットしたのちプルリクエストを送り、 GitHub 上の main ブランチに反映してください。  
