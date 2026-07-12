@@ -142,14 +142,14 @@
                 cat.setXY(0, 0);
                 cat.setDirection(90);
 
+                this.sayFromJudge('')
                 this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
 
                 setTimeout(() => {
                     this.runtime.emit('SAY', activePlayButton, 'say', '');
                     this.runtime.startHats('drill_whenDrillStart', null, cat);
-                }, 1000);
+                }, 1500);
             }
-            this.askCurrentQuestion();
         }
 
         checkAnswer (args, util) {
@@ -195,13 +195,13 @@
             if (isCorrect) {
                 this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！つぎにすすむよ！');
                 this.currentQuestionIndex++;
-                
-                setTimeout(() => {
-                    this.askCurrentQuestion();
-                }, 2500);
             } else {
                 this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！もういちど かくにんしてみてね');
             }
+                
+            setTimeout(() => {
+                this.askCurrentQuestion();
+            }, 2500);
         }
     }
 
