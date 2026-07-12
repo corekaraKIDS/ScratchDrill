@@ -46,12 +46,6 @@
                     }
                 }
             ];
-
-            // 【緑の旗が押されたとき】問題インデックスを初期化して出題
-            this.runtime.on('PROJECT_START', () => {
-                this.currentQuestionIndex = 0;
-                this.askCurrentQuestion();
-            });
         }
 
         // ブロックの定義（ハットブロック、テストラン、答え合わせ）
@@ -64,7 +58,7 @@
                 color3: '#000000',
                 blocks: [
                     {
-                        opcode: 'whenDrillStart',
+                        opcode: 'codeStart',
                         blockType: Scratch.BlockType.HAT,
                         text: 'ここから かきはじめる',
                         isEdgeActivated: false 
@@ -73,6 +67,17 @@
                         opcode: 'testRun',
                         blockType: Scratch.BlockType.COMMAND,
                         text: 'テストランする'
+                    },
+                    // 🌟【新設】入力チェック用の六角形ブロック
+                    {
+                        opcode: 'isValidQuestionId',
+                        blockType: Scratch.BlockType.BOOLEAN,
+                        text: 'もんだいばんごうOK'
+                    },
+                    {
+                        opcode: 'startDrillWithId',
+                        blockType: Scratch.BlockType.COMMAND,
+                        text: 'ドリルをスタートする'
                     },
                     {
                         opcode: 'checkAnswer',
@@ -83,7 +88,7 @@
             };
         }
 
-        whenDrillStart (args, util) {
+        codeStart (args, util) {
             return true;
         }
 
@@ -104,7 +109,7 @@
                 for (const id in blocks) {
                     if (blocks[id].opcode === 'drill_checkAnswer') hasCheckAnswer = true;
                     if (blocks[id].opcode === 'drill_testRun') hasTestRun = true;
-                    if (blocks[id].opcode === 'drill_whenDrillStart') hasHat = true;
+                    if (blocks[id].opcode === 'drill_codeStart') hasHat = true;
                 }
 
                 if (hasCheckAnswer) judge = target;
@@ -115,6 +120,44 @@
                 }
             }
             return {judge, playButton, cat};
+        }
+
+        // 変数名（文字列）を指定すると、その現在の値を返す関数
+        getVariableValueByName(varName) {
+            // ステージのグローバル変数（すべてのスプライト用）から探す
+            const stage = this.runtime.getTargetForStage();
+            if (stage && stage.variables) {
+                for (const id in stage.variables) {
+                    if (stage.variables[id].name === varName) {
+                        return stage.variables[id].value; // 見つかったら数値を返す
+                    }
+                }
+            }
+
+            // 画面上に指定された変数が存在していない場合
+            return null; 
+        }
+
+        isValidQuestionId (args) {
+            const startQuestionId = this.getVariableValueByName('スタートばんごう');
+            if (!this.questions || this.questions.length === 0) return false;
+            const targetId = parseInt(startQuestionId, 10);
+            // questions の中に、同じ id を持つ問題があれば true を返す
+            return this.questions.some(q => q.id === targetId);
+        }
+
+        startDrillWithId (args) {
+            const startQuestionId = this.getVariableValueByName('スタートばんごう');
+            if (!this.questions || this.questions.length === 0) return;
+            const targetId = parseInt(startQuestionId, 10);
+            const targetIndex = this.questions.findIndex(q => q.id === targetId);
+            
+            if (targetIndex !== -1) {
+                this.currentQuestionIndex = targetIndex;
+            } else {
+                this.currentQuestionIndex = 0; 
+            }
+            this.askCurrentQuestion();
         }
 
         askCurrentQuestion (args, util) {
@@ -147,7 +190,7 @@
 
                 setTimeout(() => {
                     this.runtime.emit('SAY', activePlayButton, 'say', '');
-                    this.runtime.startHats('drill_whenDrillStart', null, cat);
+                    this.runtime.startHats('drill_codeStart', null, cat);
                 }, 1500);
             }
         }
@@ -171,7 +214,7 @@
 
             let hatBlockId = null;
             for (const id in blocks) {
-                if (blocks[id].opcode === 'drill_whenDrillStart') {
+                if (blocks[id].opcode === 'drill_codeStart') {
                     hatBlockId = id;
                     break;
                 }
