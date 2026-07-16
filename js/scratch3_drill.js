@@ -204,6 +204,182 @@
 
                         return true;
                     }
+                },
+                {
+                    id: 11,
+                    title: 'ネコの xざひょうを 100 にしよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode !== 'motion_setx') return false;
+                        const xId = allBlocks[first.blockId].inputs.X.block;
+                        return allBlocks[xId].fields.NUM.value === '100';
+                    }
+                },
+                {
+                    id: 12,
+                    title: 'ネコの yざひょうを 100 にしよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode !== 'motion_sety') return false;
+                        const yId = allBlocks[first.blockId].inputs.Y.block;
+                        return allBlocks[yId].fields.NUM.value === '100';
+                    }
+                },
+                {
+                    id: 13,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いこう！\nぶひんは 1つだけで できるよ！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const xId = allBlocks[first.blockId].inputs.X.block;
+                        const yId = allBlocks[first.blockId].inputs.Y.block;
+                        return allBlocks[xId].fields.NUM.value === '120' && allBlocks[yId].fields.NUM.value === '60';
+                    }
+                },
+                {
+                    id: 14,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょう: -120\nyざひょう: -60\nのばしょに いこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const xId = allBlocks[first.blockId].inputs.X.block;
+                        const yId = allBlocks[first.blockId].inputs.Y.block;
+                        return allBlocks[xId].fields.NUM.value === '120' && allBlocks[yId].fields.NUM.value === '60';
+                    }
+                },
+                {
+                    id: 15,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょうを 30 ふやそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changexby') return false;
+                        const dxId = allBlocks[third.blockId].inputs.DX.block;
+                        return allBlocks[dxId].fields.NUM.value === '30';
+                    }
+                },
+                {
+                    id: 16,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nyざひょうを 40 へらそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changeyby') return false;
+                        const dyId = allBlocks[third.blockId].inputs.DY.block;
+                        return allBlocks[dyId].fields.NUM.value === '-40';
+                    }
+                },
+                {
+                    id: 17,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nみぎに 80 うごこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changexby') return false;
+                        const dxId = allBlocks[third.blockId].inputs.DX.block;
+                        return allBlocks[dxId].fields.NUM.value === '80';
+                    }
+                },
+                {
+                    id: 18,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nひだりに 80 うごこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changexby') return false;
+                        const dxId = allBlocks[third.blockId].inputs.DX.block;
+                        return allBlocks[dxId].fields.NUM.value === '-80';
+                    }
+                },
+                {
+                    id: 19,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nうえに 40 うごこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changeyby') return false;
+                        const dyId = allBlocks[third.blockId].inputs.DY.block;
+                        return allBlocks[dyId].fields.NUM.value === '40';
+                    }
+                },
+                {
+                    id: 20,
+                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nしたに 100 うごこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_changeyby') return false;
+                        const dyId = allBlocks[third.blockId].inputs.DY.block;
+                        return allBlocks[dyId].fields.NUM.value === '-100';
+                    }
                 }
             ];
         }
