@@ -25,24 +25,81 @@
             this.questions = [
                 {
                     id: 1,
-                    title: 'ネコを【10ほ】うごかしてみよう！',
+                    title: 'ネコを 100ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length === 0) return false;
                         const first = userSequence[0];
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '10';
+                        return allBlocks[numBlockId].fields.NUM.value === '100';
                     }
                 },
                 {
                     id: 2,
-                    title: 'つぎは、ネコを【30ほ】うごかしてみよう！',
+                    title: 'ネコを 200ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length === 0) return false;
                         const first = userSequence[0];
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '30';
+                        return allBlocks[numBlockId].fields.NUM.value === '200';
+                    }
+                },
+                {
+                    id: 3,
+                    title: 'ネコを うしろに100ほ うごかそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const first = userSequence[0];
+                        if (first.opcode !== 'motion_movesteps') return false;
+                        const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
+                        return allBlocks[numBlockId].fields.NUM.value === '-100';
+                    }
+                },
+                {
+                    id: 4,
+                    title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに50ほ うごかそう！',
+                    validate: (userSequence, allBlocks) => {
+                        // 3つのブロックが並んでいるかチェック
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+                        
+                        if (first.opcode !== 'motion_movesteps') return false;
+                        const firstStepsId = allBlocks[first.blockId].inputs.STEPS.block;
+                        if (allBlocks[firstStepsId].fields.NUM.value !== '100') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_movesteps') return false;
+                        const thirdStepsId = allBlocks[third.blockId].inputs.STEPS.block;
+                        if (allBlocks[thirdStepsId].fields.NUM.value !== '-50') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 5,
+                    title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに うごかそう！\nもとのばしょに もどってこよう！',
+                    validate: (userSequence, allBlocks) => {
+                        // 3つのブロックが並んでいるかチェック
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+                        
+                        if (first.opcode !== 'motion_movesteps') return false;
+                        const firstStepsId = allBlocks[first.blockId].inputs.STEPS.block;
+                        if (allBlocks[firstStepsId].fields.NUM.value !== '100') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_movesteps') return false;
+                        const thirdStepsId = allBlocks[third.blockId].inputs.STEPS.block;
+                        if (allBlocks[thirdStepsId].fields.NUM.value !== '-100') return false;
+
+                        return true;
                     }
                 }
             ];
@@ -162,7 +219,7 @@
 
         askCurrentQuestion (args, util) {
             if (this.currentQuestionIndex >= this.questions.length) {
-                this.sayFromJudge('ぜんもんせいかい！おめでとう！');
+                this.sayFromJudge('ぜんもんせいかい！\nおめでとう！');
                 return;
             }
             const q = this.questions[this.currentQuestionIndex];
@@ -200,12 +257,12 @@
             const activeJudge = judge || util.target;
 
             if (!cat) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが みつかりません');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが\nみつかりません');
                 return;
             }
 
             if (this.currentQuestionIndex >= this.questions.length) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'すべてのもんだいをクリアしています');
+                this.runtime.emit('SAY', activeJudge, 'say', 'すべての もんだいを\nクリアしています');
                 return;
             }
 
@@ -221,7 +278,7 @@
             }
 
             if (!hatBlockId) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、そのしたにプログラムをつくってね！');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、\nそのしたにプログラムを つくってね！');
                 return;
             }
 
@@ -236,13 +293,14 @@
             const isCorrect = currentQuestion.validate(userSequence, blocks);
 
             if (isCorrect) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！つぎにすすむよ！');
+                this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
                 this.currentQuestionIndex++;
             } else {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！もういちど かくにんしてみてね');
+                this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
             }
                 
             setTimeout(() => {
+                cat.setXY(0, 0);
                 this.askCurrentQuestion();
             }, 2500);
         }
