@@ -101,6 +101,109 @@
 
                         return true;
                     }
+                },
+                {
+                    id: 6,
+                    title: 'ネコを みぎに15ど まわそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode == 'motion_turnright') {
+                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            return allBlocks[numBlockId].fields.NUM.value === '15';
+                        } else if (first.opcode == 'motion_turnleft') {
+                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            return allBlocks[numBlockId].fields.NUM.value === '-15';
+                        }
+                        return false;
+                    }
+                },
+                {
+                    id: 7,
+                    title: 'ネコを ひだりに45ど まわそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        
+                        if (first.opcode == 'motion_turnright') {
+                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[numBlockId].fields.NUM.value !== '-45') return false;
+                        } else if (first.opcode == 'motion_turnleft') {
+                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[numBlockId].fields.NUM.value !== '45') return false;
+                        }
+                        return true;
+                    }
+                },
+                {
+                    id: 8,
+                    title: 'ネコの むきを\n180ど（ました）に しよう！\n「まわす」は つかわないよ！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length === 0) return false;
+                        const [first] = userSequence;
+                        
+                        if (first.opcode !== 'motion_pointindirection') return false;
+                        const numBlockId = allBlocks[first.blockId].inputs.DIRECTION.block;
+                        return allBlocks[numBlockId].fields.NUM.value === '180';
+                    }
+                },
+                {
+                    id: 9,
+                    title: 'みぎに90ど まわして、\n1びょう まってから\nひだりに90ど まわそう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode == 'motion_turnright') {
+                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[firstDegId].fields.NUM.value !== '90') return false;
+                        } else if (first.opcode == 'motion_turnleft') {
+                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[firstDegId].fields.NUM.value !== '-90') return false;
+                        }
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode == 'motion_turnright') {
+                            const thirdDegId = allBlocks[third.blockId].inputs.DEGREES.block;
+                            if (allBlocks[thirdDegId].fields.NUM.value !== '-90') return false;
+                        } else if (third.opcode == 'motion_turnleft') {
+                            const thirdDegId = allBlocks[third.blockId].inputs.DEGREES.block;
+                            if (allBlocks[thirdDegId].fields.NUM.value !== '90') return false;
+                        }
+
+                        return true;
+                    }
+                },
+                {
+                    id: 10,
+                    title: 'みぎに45ど まわして、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length < 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        if (first.opcode == 'motion_turnright') {
+                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[firstDegId].fields.NUM.value !== '45') return false;
+                        } else if (first.opcode == 'motion_turnleft') {
+                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
+                            if (allBlocks[firstDegId].fields.NUM.value !== '-45') return false;
+                        }
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+
+                        if (third.opcode !== 'motion_pointindirection') return false;
+                        const dirId = allBlocks[third.blockId].inputs.DIRECTION.block;
+                        if (allBlocks[dirId].fields.NUM.value !== '-90') return false;
+
+                        return true;
+                    }
                 }
             ];
         }
