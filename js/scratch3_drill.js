@@ -28,7 +28,7 @@
                     title: 'ネコを 100ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length === 0) return false;
-                        const first = userSequence[0];
+                        const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
                         return allBlocks[numBlockId].fields.NUM.value === '100';
@@ -39,7 +39,7 @@
                     title: 'ネコを 200ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length === 0) return false;
-                        const first = userSequence[0];
+                        const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
                         return allBlocks[numBlockId].fields.NUM.value === '200';
@@ -50,7 +50,7 @@
                     title: 'ネコを うしろに100ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length === 0) return false;
-                        const first = userSequence[0];
+                        const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
                         return allBlocks[numBlockId].fields.NUM.value === '-100';
@@ -105,7 +105,7 @@
             ];
         }
 
-        // ブロックの定義（ハットブロック、テストラン、答え合わせ）
+        // ブロックの定義
         getInfo () {
             return {
                 id: 'drill',
@@ -125,7 +125,6 @@
                         blockType: Scratch.BlockType.COMMAND,
                         text: 'テストランする'
                     },
-                    // 🌟【新設】入力チェック用の六角形ブロック
                     {
                         opcode: 'isValidQuestionId',
                         blockType: Scratch.BlockType.BOOLEAN,
@@ -233,14 +232,21 @@
             }
         }
 
+        initializeCat () {
+            const { cat } = this.getTargets();
+            if (cat) {
+                this.runtime.stopForTarget(cat);
+                cat.setXY(0, 0);
+                cat.setDirection(90);
+            }
+        }
+
         testRun (args, util) {
             const { playButton, cat } = this.getTargets();
             const activePlayButton = playButton || util.target;
             
             if (cat) {
-                this.runtime.stopForTarget(cat);
-                cat.setXY(0, 0);
-                cat.setDirection(90);
+                this.initializeCat();
 
                 this.sayFromJudge('')
                 this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
@@ -300,7 +306,7 @@
             }
                 
             setTimeout(() => {
-                cat.setXY(0, 0);
+                this.initializeCat();
                 this.askCurrentQuestion();
             }, 2500);
         }
