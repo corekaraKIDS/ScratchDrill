@@ -14,6 +14,38 @@
 
     const runtime = Scratch.vm.runtime;
 
+    // ドリルの正誤判定で使う機能をまとめたクラス
+    class DrillValidators {
+        // 「ずっと」の中身を取得
+        static getInnerBlocks(foreverBlock, allBlocks) {
+            if (!foreverBlock || !foreverBlock.inputs.SUBSTACK) return [];
+            const innerBlocks = [];
+            let currentId = foreverBlock.inputs.SUBSTACK.block;
+            while (currentId) {
+                innerBlocks.push(allBlocks[currentId]);
+                currentId = allBlocks[currentId].next;
+            }
+            return innerBlocks;
+        }
+
+        // ずっと5歩動いて、もし端についたらはねかえる
+        static checkForeverMoveAndBounce(foreverBlockId, allBlocks) {
+            const foreverBlock = allBlocks[foreverBlockId];
+
+            const innerBlocks = this.getInnerBlocks(foreverBlock, allBlocks)
+            if (innerBlocks.length !== 2) return false;
+
+            // 順不同
+            const moveBlock = innerBlocks.find(b => b.opcode === 'motion_movesteps');
+            const bounceBlock = innerBlocks.find(b => b.opcode === 'motion_ifonedgebounce');
+            if (!moveBlock || !bounceBlock) return false;
+
+            const stepsId = moveBlock.inputs.STEPS.block;
+            return allBlocks[stepsId].fields.NUM.value === '5';
+        }
+    }
+
+    // ドリル本体
     class Scratch3Drill {
         constructor (runtime) {
             this.runtime = runtime;
@@ -27,7 +59,7 @@
                     id: 1,
                     title: 'ネコを 100ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
@@ -38,7 +70,7 @@
                     id: 2,
                     title: 'ネコを 200ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
@@ -49,7 +81,7 @@
                     id: 3,
                     title: 'ネコを うしろに100ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
                         const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
@@ -61,7 +93,7 @@
                     title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに50ほ うごかそう！',
                     validate: (userSequence, allBlocks) => {
                         // 3つのブロックが並んでいるかチェック
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
                         
                         if (first.opcode !== 'motion_movesteps') return false;
@@ -84,7 +116,7 @@
                     title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに うごかそう！\nもとのばしょに もどってこよう！',
                     validate: (userSequence, allBlocks) => {
                         // 3つのブロックが並んでいるかチェック
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
                         
                         if (first.opcode !== 'motion_movesteps') return false;
@@ -106,7 +138,7 @@
                     id: 6,
                     title: 'ネコを みぎに15ど まわそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         if (first.opcode == 'motion_turnright') {
@@ -123,7 +155,7 @@
                     id: 7,
                     title: 'ネコを ひだりに45ど まわそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         
@@ -141,7 +173,7 @@
                     id: 8,
                     title: 'ネコの むきを\n180ど（ました）に しよう！\n「まわす」は つかわないよ！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_pointindirection') return false;
@@ -153,7 +185,7 @@
                     id: 9,
                     title: 'みぎに90ど まわして、\n1びょう まってから\nひだりに90ど まわそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode == 'motion_turnright') {
@@ -183,7 +215,7 @@
                     id: 10,
                     title: 'みぎに45ど まわして、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode == 'motion_turnright') {
@@ -209,7 +241,7 @@
                     id: 11,
                     title: 'ネコの xざひょうを 100 にしよう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_setx') return false;
@@ -221,7 +253,7 @@
                     id: 12,
                     title: 'ネコの yざひょうを 100 にしよう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_sety') return false;
@@ -233,7 +265,7 @@
                     id: 13,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いこう！\nぶひんは 1つだけで できるよ！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
+                        if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -246,20 +278,28 @@
                     id: 14,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょう: -120\nyざひょう: -60\nのばしょに いこう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length === 0) return false;
-                        const [first] = userSequence;
-                        
+                        const [first, second, third] = userSequence;
+
                         if (first.opcode !== 'motion_gotoxy') return false;
+                        const firstX = allBlocks[first.blockId].inputs.X.block;
+                        const firstY = allBlocks[first.blockId].inputs.Y.block;
+                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
+                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        
+                        if (third.opcode !== 'motion_gotoxy') return false;
                         const xId = allBlocks[first.blockId].inputs.X.block;
                         const yId = allBlocks[first.blockId].inputs.Y.block;
-                        return allBlocks[xId].fields.NUM.value === '120' && allBlocks[yId].fields.NUM.value === '60';
+                        return allBlocks[xId].fields.NUM.value === '-120' && allBlocks[yId].fields.NUM.value === '-60';
                     }
                 },
                 {
                     id: 15,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょうを 30 ふやそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -280,7 +320,7 @@
                     id: 16,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nyざひょうを 40 へらそう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -301,7 +341,7 @@
                     id: 17,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nみぎに 80 うごこう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -322,7 +362,7 @@
                     id: 18,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nひだりに 80 うごこう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -343,7 +383,7 @@
                     id: 19,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nうえに 40 うごこう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -364,7 +404,7 @@
                     id: 20,
                     title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nしたに 100 うごこう！',
                     validate: (userSequence, allBlocks) => {
-                        if (userSequence.length < 3) return false;
+                        if (userSequence.length !== 3) return false;
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
@@ -379,6 +419,84 @@
                         if (third.opcode !== 'motion_changeyby') return false;
                         const dyId = allBlocks[third.blockId].inputs.DY.block;
                         return allBlocks[dyId].fields.NUM.value === '-100';
+                    }
+                },
+                {
+                    id: 21,
+                    title: 'ずっと 10ど まわしつづける',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_forever') return false;
+                        const foreverBlock = allBlocks[first.blockId];
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+                        const innerBlock = innerBlocks[0];
+
+                        if (innerBlock.opcode !== 'motion_turnright' && innerBlock.opcode !== 'motion_turnleft') return false;
+                        const degId = innerBlock.inputs.DEGREES.block;
+                        return allBlocks[degId].fields.NUM.value === '10';
+                    }
+                },
+                {
+                    id: 22,
+                    title: 'ずっと 5ほ うごきつづける',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_forever') return false;
+                        const foreverBlock = allBlocks[first.blockId];
+                        const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+                        const innerBlock = innerBlocks[0];
+
+                        if (innerBlock.opcode !== 'motion_movesteps') return false;
+                        const stepsId = innerBlock.inputs.STEPS.block;
+                        return allBlocks[stepsId].fields.NUM.value === '5';
+                    }
+                },
+                {
+                    id: 23,
+                    title: 'ずっと 5ほ うごきつづけて、\nはしに ついたら はねかえる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_forever') return false;
+                        return DrillValidators.checkForeverMoveAndBounce(first.blockId, allBlocks);
+                    }
+                },
+                {
+                    id: 24,
+                    title: 'かいてんほうほうを さゆうのみに してから\nずっと 5ほ うごきつづけて、\nはしに ついたら はねかえる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+                        const [first, second] = userSequence;
+
+                        if (first.opcode !== 'motion_setrotationstyle') return false;
+                        const styleBlock = allBlocks[first.blockId];
+                        if (styleBlock.fields.STYLE.value !== 'left-right') return false;
+
+                        if (second.opcode !== 'control_forever') return false;
+                        return DrillValidators.checkForeverMoveAndBounce(second.blockId, allBlocks);
+                    }
+                },
+                {
+                    id: 25,
+                    title: 'むきを 30どに してから\nずっと 5ほ うごきつづけて、\nはしに ついたら はねかえる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+                        const [first, second] = userSequence;
+
+                        if (first.opcode !== 'motion_pointindirection') return false;
+                        const dirId = allBlocks[first.blockId].inputs.DIRECTION.block;
+                        if (allBlocks[dirId].fields.NUM.value !== '30') return false;
+
+                        if (second.opcode !== 'control_forever') return false;
+                        return DrillValidators.checkForeverMoveAndBounce(second.blockId, allBlocks);
                     }
                 }
             ];
