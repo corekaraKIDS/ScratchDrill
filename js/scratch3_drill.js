@@ -498,6 +498,141 @@
                         if (second.opcode !== 'control_forever') return false;
                         return DrillValidators.checkForeverMoveAndBounce(second.blockId, allBlocks);
                     }
+                },
+                {
+                    id: 26,
+                    title: '10ほ うごくことを 10かい くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_repeat') return false;
+                        const repeatBlock = allBlocks[first.blockId];
+
+                        if (!repeatBlock.inputs.TIMES) return false;
+                        const timesId = repeatBlock.inputs.TIMES.block;
+                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '10') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+
+                        const [inner] = innerBlocks;
+                        if (inner.opcode !== 'motion_movesteps') return false;
+
+                        const stepsId = inner.inputs.STEPS?.block;
+                        return stepsId && allBlocks[stepsId]?.fields?.NUM?.value === '10';
+                    }
+                },
+                {
+                    id: 27,
+                    title: 'yざひょうを 20ふやす ことを\n5かい くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_repeat') return false;
+                        const repeatBlock = allBlocks[first.blockId];
+
+                        if (!repeatBlock.inputs.TIMES) return false;
+                        const timesId = repeatBlock.inputs.TIMES.block;
+                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '5') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+
+                        const [inner] = innerBlocks;
+                        if (inner.opcode !== 'motion_changeyby') return false;
+
+                        const dyId = inner.inputs.DY?.block;
+                        return dyId && allBlocks[dyId]?.fields?.NUM?.value === '20';
+                    }
+                },
+                {
+                    id: 28,
+                    title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_repeat') return false;
+                        const repeatBlock = allBlocks[first.blockId];
+
+                        if (!repeatBlock.inputs.TIMES) return false;
+                        const timesId = repeatBlock.inputs.TIMES.block;
+                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '5') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                        if (innerBlocks.length !== 2) return false;
+
+                        // 順不同
+                        const waitBlock = innerBlocks.find(b => b.opcode === 'control_wait');
+                        const changeYBlock = innerBlocks.find(b => b.opcode === 'motion_changeyby');
+                        if (!waitBlock || !changeYBlock) return false;
+
+                        // 1秒
+                        const durId = waitBlock.inputs.DURATION?.block;
+                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+
+                        // y座標 20
+                        const dyId = changeYBlock.inputs.DY?.block;
+                        return dyId && allBlocks[dyId]?.fields?.NUM?.value === '20';
+                    }
+                },
+                {
+                    id: 29,
+                    title: 'xざひょうを 2へらす ことを\nスペースキーが おされるまで くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_repeat_until') return false;
+                        const repeatBlock = allBlocks[first.blockId];
+
+                        if (!repeatBlock.inputs.CONDITION) return false;
+                        const condId = repeatBlock.inputs.CONDITION.block;
+                        const condBlock = allBlocks[condId];
+                        if (!condBlock || condBlock.opcode !== 'sensing_keypressed') return false;
+
+                        const keyMenuId = condBlock.inputs.KEY_OPTION?.block;
+                        if (!keyMenuId || allBlocks[keyMenuId]?.fields?.KEY_OPTION?.value !== 'space') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+
+                        const [inner] = innerBlocks;
+                        if (inner.opcode !== 'motion_changexby') return false;
+
+                        const dxId = inner.inputs.DX?.block;
+                        return dxId && allBlocks[dxId]?.fields?.NUM?.value === '-2';
+                    }
+                },
+                {
+                    id: 30,
+                    title: 'xざひょうを 2へらす ことを\nはしに つくまで くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const [first] = userSequence;
+
+                        if (first.opcode !== 'control_repeat_until') return false;
+                        const repeatBlock = allBlocks[first.blockId];
+
+                        if (!repeatBlock.inputs.CONDITION) return false;
+                        const condId = repeatBlock.inputs.CONDITION.block;
+                        const condBlock = allBlocks[condId];
+                        if (!condBlock || condBlock.opcode !== 'sensing_touchingobject') return false;
+
+                        const menuId = condBlock.inputs.TOUCHINGOBJECTMENU?.block;
+                        if (!menuId || allBlocks[menuId]?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                        if (innerBlocks.length !== 1) return false;
+
+                        const [inner] = innerBlocks;
+                        if (inner.opcode !== 'motion_changexby') return false;
+
+                        const dxId = inner.inputs.DX?.block;
+                        return dxId && allBlocks[dxId]?.fields?.NUM?.value === '-2';
+                    }
                 }
             ];
         }
