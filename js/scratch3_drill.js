@@ -3,7 +3,7 @@
 
     // サンドボックスモードのチェック
     if (typeof window === 'undefined' || !Scratch.vm) {
-        const errorMsg = "【自動採点ドリル】\nこの拡張機能は「サンドボックスなし」で読み込む必要があります。\nURLに「?unsandboxed-extension=」が含まれているか確認してください。";
+        const errorMsg = "【自動採点ドリル】\nこの拡張機能は「サンドボックスなし」で読み込む必要があります。";
         // 1. もし画面がある環境（通常のブラウザ画面）ならアラートを出す
         if (typeof window !== 'undefined') {
             alert(errorMsg);
@@ -16,11 +16,11 @@
 
     // ドリルの正誤判定で使う機能をまとめたクラス
     class DrillValidators {
-        // 「ずっと」の中身を取得
-        static getInnerBlocks(foreverBlock, allBlocks) {
-            if (!foreverBlock || !foreverBlock.inputs.SUBSTACK) return [];
+        // ループの中身を取得
+        static getInnerBlocks(loopBlock, allBlocks) {
+            if (!loopBlock || !loopBlock.inputs.SUBSTACK) return [];
             const innerBlocks = [];
-            let currentId = foreverBlock.inputs.SUBSTACK.block;
+            let currentId = loopBlock.inputs.SUBSTACK.block;
             while (currentId) {
                 innerBlocks.push(allBlocks[currentId]);
                 currentId = allBlocks[currentId].next;
@@ -774,7 +774,7 @@
                     cat = target;
                 }
             }
-            return {judge, playButton, cat};
+            return { judge, playButton, cat };
         }
 
         // 変数名（文字列）を指定すると、その現在の値を返す関数
@@ -831,12 +831,30 @@
             }
         }
 
-        initializeCat () {
-            const { cat } = this.getTargets();
+        initializeSprites () {
+            const { judge, playButton, cat } = this.getTargets();
             if (cat) {
                 this.runtime.stopForTarget(cat);
                 cat.setXY(0, 0);
                 cat.setDirection(90);
+                cat.setSize(100);
+                cat.setVisible(true);  
+                cat.setRotationStyle(Scratch.BlockType.ALL_AROUND);
+                cat.setCostume(0);
+            }
+            if (playButton) {
+                playButton.setXY(-131, 146);
+                playButton.setDirection(90);
+                playButton.setSize(100);
+                playButton.setVisible(true);  
+                playButton.setCostume(0);
+            }
+            if (judge) {
+                judge.setXY(181, -139);
+                judge.setDirection(90);
+                judge.setSize(30);
+                judge.setVisible(true);  
+                judge.setCostume(0);
             }
         }
 
@@ -845,7 +863,7 @@
             const activePlayButton = playButton || util.target;
             
             if (cat) {
-                this.initializeCat();
+                this.initializeSprites();
 
                 this.sayFromJudge('')
                 this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
@@ -905,7 +923,7 @@
             }
                 
             setTimeout(() => {
-                this.initializeCat();
+                this.initializeSprites();
                 this.askCurrentQuestion();
             }, 2500);
         }
