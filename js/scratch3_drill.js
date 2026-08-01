@@ -752,6 +752,7 @@
             let judge = null;
             let playButton = null;
             let cat = null;
+            let post = null;
 
             for (const target of this.runtime.targets) {
                 if (target.isStage) continue;
@@ -770,11 +771,9 @@
                 if (hasCheckAnswer) judge = target;
                 else if (hasTestRun) playButton = target;
                 else if (hasHat) cat = target;
-                else if (!cat) {
-                    cat = target;
+                else post = target;
                 }
-            }
-            return { judge, playButton, cat };
+            return { cat, playButton, judge, post };
         }
 
         // 変数名（文字列）を指定すると、その現在の値を返す関数
@@ -825,14 +824,14 @@
         }
 
         sayFromJudge (text) {
-            const {judge} = this.getTargets();
+            const { judge } = this.getTargets();
             if (judge) {
                 this.runtime.emit('SAY', judge, 'say', text);
             }
         }
 
         initializeSprites () {
-            const { judge, playButton, cat } = this.getTargets();
+            const { cat, playButton, judge, post } = this.getTargets();
             if (cat) {
                 this.runtime.stopForTarget(cat);
                 cat.setXY(0, 0);
@@ -855,11 +854,17 @@
                 judge.setSize(30);
                 judge.setVisible(true);  
                 judge.setCostume(0);
+            } if (post) {
+                post.setXY(-190, -140);
+                post.setDirection(90);
+                post.setSize(25);
+                post.setVisible(true);  
+                post.setCostume(0);
             }
         }
 
         testRun (args, util) {
-            const { playButton, cat } = this.getTargets();
+            const { cat, playButton } = this.getTargets();
             const activePlayButton = playButton || util.target;
             
             if (cat) {
@@ -876,7 +881,7 @@
         }
 
         checkAnswer (args, util) {
-            const {judge, cat} = this.getTargets();
+            const { cat, judge } = this.getTargets();
             const activeJudge = judge || util.target;
 
             if (!cat) {
