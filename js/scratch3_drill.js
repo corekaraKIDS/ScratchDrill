@@ -28,6 +28,13 @@
             return innerBlocks;
         }
 
+        // メッセージブロックから送信するメッセージ名を取得
+        static getBroadcastMessage(block, allBlocks) {
+            if (!block || !block.inputs) return null;
+            const msgId = block.inputs.BROADCAST_INPUT?.block;
+            return allBlocks[msgId]?.fields?.BROADCAST_OPTION?.value || null;
+        }
+
         // ずっと5歩動いて、もし端についたらはねかえる
         static checkForeverMoveAndBounce(foreverBlockId, allBlocks) {
             const foreverBlock = allBlocks[foreverBlockId];
@@ -42,6 +49,36 @@
 
             const stepsId = moveBlock.inputs.STEPS.block;
             return allBlocks[stepsId].fields.NUM.value === '5';
+        }
+
+        /**
+         * 「〇座標を △ずつ変える」処理を ◇回繰り返す構造かを判定
+         * @param {Object} block - 繰り返しのトップレベルブロック (allBlocks[item.blockId])
+         * @param {Object} allBlocks - すべてのブロック情報
+         * @param {'x'|'y'} axis - 軸 ('x' または 'y')
+         * @param {number|string} delta - 変化量 (例: -2, 2)
+         * @param {number|string} times - 繰り返す回数 (例: 50)
+         */
+        static checkRepeatChangeCoord(block, allBlocks, axis, delta, times) {
+            if (!block || block.opcode !== 'control_repeat') return false;
+
+            // 回数チェック
+            const timesId = block.inputs.TIMES?.block;
+            if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== String(times)) return false;
+
+            // くり返しの中身チェック (1個ちょうど)
+            const innerBlocks = this.getInnerBlocks(block, allBlocks);
+            if (innerBlocks.length !== 1) return false;
+
+            const isX = axis.toLowerCase() === 'x';
+            const expectedOpcode = isX ? 'motion_changexby' : 'motion_changeyby';
+            const inputKey = isX ? 'DX' : 'DY';
+
+            const [inner] = innerBlocks;
+            if (inner.opcode !== expectedOpcode) return false;
+
+            const deltaId = inner.inputs[inputKey]?.block;
+            return allBlocks[deltaId]?.fields?.NUM?.value === String(delta);
         }
     }
 
@@ -700,6 +737,94 @@
                         // どちらでもなければ不正解
                         return false;
                     }
+                },
+                {
+                    id: 31,
+                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「かくだい」を おくる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+                        const [first, second] = userSequence;
+
+                        // 1個目: x座標を -2 変えるのを 50回繰り返す
+                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                        // 2個目: メッセージ「かくだい」を送る
+                        if (second.opcode !== 'event_broadcast') return false;
+                        return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === 'かくだい';
+                    }
+                },
+                {
+                    id: 32,
+                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+                        const [first, second] = userSequence;
+
+                        // 1個目: x座標を -2 変えるのを 50回繰り返す
+                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                        // 2個目: メッセージ「１かいてん」を送る
+                        if (second.opcode !== 'event_broadcast') return false;
+                        return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === '１かいてん';
+                    }
+                },
+                {
+                    id: 33,
+                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくり、\nこんどは xざひょうを 2ふやす ことを\n50かい くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        // 1個目: x座標を -2 変えるのを 50回繰り返す
+                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                        // 2個目: メッセージ「１かいてん」を送る
+                        if (second.opcode !== 'event_broadcast') return false;
+                        if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
+
+                        // 3個目: x座標を 2 変えるのを 50回繰り返す
+                        return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
+                    }
+                },
+                {
+                    id: 34,
+                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくって おわるまで まち、\nxざひょうを 2ふやす ことを\n50かい くりかえす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        // 1個目: x座標を -2 変えるのを 50回繰り返す
+                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                        // 2個目: メッセージ「１かいてん」を送って待つ
+                        if (second.opcode !== 'event_broadcastandwait') return false;
+                        if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
+
+                        // 3個目: x座標を 2 変えるのを 50回繰り返す
+                        return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
+                    }
+                },
+                {
+                    id: 35,
+                    title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\n1びょうごに\nメッセージ「かくだい」を おくる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 3) return false;
+                        const [first, second, third] = userSequence;
+
+                        // 1個目: メッセージ「１かいてん」を送る
+                        if (first.opcode !== 'event_broadcast') return false;
+                        if (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) !== '１かいてん') return false;
+
+                        // 2個目: 1秒待つ
+                        if (second.opcode !== 'control_wait') return false;
+                        const waitBlock = allBlocks[second.blockId];
+                        const durId = waitBlock?.inputs?.DURATION?.block;
+                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+
+                        // 3個目: メッセージ「かくだい」を送る
+                        if (third.opcode !== 'event_broadcast') return false;
+                        return DrillValidators.getBroadcastMessage(allBlocks[third.blockId], allBlocks) === 'かくだい';
+                    }
                 }
             ];
         }
@@ -772,7 +897,7 @@
                 else if (hasTestRun) playButton = target;
                 else if (hasHat) cat = target;
                 else post = target;
-                }
+            }
             return { cat, playButton, judge, post };
         }
 
