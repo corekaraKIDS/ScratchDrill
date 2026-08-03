@@ -932,7 +932,6 @@
 
                         const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
                         if (inner.length !== 1) return false;
-                        console.log("aaa");
 
                         return DrillValidators.checkIfElseKeyPressedShowHide(inner[0], allBlocks, 'space');
                     }
