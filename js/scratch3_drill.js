@@ -16,16 +16,25 @@
 
     // ドリルの正誤判定で使う機能をまとめたクラス
     class DrillValidators {
-        // ループの中身を取得
-        static getInnerBlocks(loopBlock, allBlocks) {
-            if (!loopBlock || !loopBlock.inputs.SUBSTACK) return [];
-            const innerBlocks = [];
-            let currentId = loopBlock.inputs.SUBSTACK.block;
-            while (currentId) {
-                innerBlocks.push(allBlocks[currentId]);
-                currentId = allBlocks[currentId].next;
+        /**
+         * くり返しや条件分岐の中身（子ブロック配列）を取得する
+         * @param {Object} block - 親ブロック
+         * @param {Object} allBlocks - ブロック全体
+         * @param {string} inputKey - 'SUBSTACK' (if/repeatの中身) または 'SUBSTACK2' (elseの中身)
+         */
+        static getInnerBlocks(block, allBlocks, inputKey = 'SUBSTACK') {
+            if (!block || !block.inputs) return [];
+            const firstBlockId = block.inputs[inputKey]?.block;
+            if (!firstBlockId) return [];
+
+            const inner = [];
+            let currId = firstBlockId;
+            while (currId && allBlocks[currId]) {
+                const current = allBlocks[currId];
+                inner.push(current);
+                currId = current.next;
             }
-            return innerBlocks;
+            return inner;
         }
 
         // メッセージブロックから送信するメッセージ名を取得
@@ -79,6 +88,63 @@
 
             const deltaId = inner.inputs[inputKey]?.block;
             return allBlocks[deltaId]?.fields?.NUM?.value === String(delta);
+        }
+
+        // 「〇〇キーが押されたら 座標を △ずつ変える」ifブロックかを判定
+        static checkIfKeyPressedMove(block, allBlocks, key, axis, delta) {
+            if (!block || block.opcode !== 'control_if' || !block.inputs) return false;
+
+            const condId = block.inputs.CONDITION?.block;
+            const condBlock = allBlocks[condId];
+            if (!condBlock || condBlock.opcode !== 'sensing_keypressed' || !condBlock.inputs) return false;
+
+            const keyId = condBlock.inputs.KEY_OPTION?.block;
+            if (allBlocks[keyId]?.fields?.KEY_OPTION?.value !== key) return false;
+
+            const inner = this.getInnerBlocks(block, allBlocks);
+            if (inner.length !== 1) return false;
+
+            const isX = axis.toLowerCase() === 'x';
+            const expectedOpcode = isX ? 'motion_changexby' : 'motion_changeyby';
+            const inputKey = isX ? 'DX' : 'DY';
+
+            const [innerBlock] = inner;
+            if (innerBlock.opcode !== expectedOpcode || !innerBlock.inputs) return false;
+
+            const deltaId = innerBlock.inputs[inputKey]?.block;
+            return allBlocks[deltaId]?.fields?.NUM?.value === String(delta);
+        }
+
+        // 「〇〇キーが押されたら 表示する、でなければ 隠す」if-elseブロックかを判定
+        static checkIfElseKeyPressedShowHide(block, allBlocks, key = 'space') {
+            if (!block || block.opcode !== 'control_if_else' || !block.inputs) return false;
+
+            // 1. 条件式（<スペース キーがおされた>）の検証
+            const condId = block.inputs.CONDITION?.block;
+            const condBlock = allBlocks[condId];
+            if (!condBlock || condBlock.opcode !== 'sensing_keypressed') return false;
+
+            const keyId = condBlock.inputs.KEY_OPTION?.block;
+            if (allBlocks[keyId]?.fields?.KEY_OPTION?.value !== key) return false;
+
+            // 2. then（もし）側: ひょうじする
+            const thenBlocks = this.getInnerBlocks(block, allBlocks, 'SUBSTACK');
+            if (thenBlocks.length !== 1 || thenBlocks[0].opcode !== 'looks_show') return false;
+
+            // 3. else（でなければ）側: かくす
+            const elseBlocks = this.getInnerBlocks(block, allBlocks, 'SUBSTACK2');
+            if (elseBlocks.length !== 1 || elseBlocks[0].opcode !== 'looks_hide') return false;
+
+            return true;
+        }
+
+        // 〇度回すブロックかを判定 (右回り・左回り不問)
+        static checkTurn(block, allBlocks, degrees) {
+            if (!block || !block.inputs) return false;
+            if (block.opcode !== 'motion_turnright' && block.opcode !== 'motion_turnleft') return false;
+
+            const degId = block.inputs.DEGREES?.block;
+            return allBlocks[degId]?.fields?.NUM?.value === String(degrees);
         }
     }
 
@@ -463,18 +529,13 @@
                     title: 'ずっと 10ど まわしつづける',
                     validate: (userSequence, allBlocks) => {
                         if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-
-                        if (first.opcode !== 'control_forever') return false;
-                        const foreverBlock = allBlocks[first.blockId];
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
 
                         const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
                         if (innerBlocks.length !== 1) return false;
-                        const innerBlock = innerBlocks[0];
 
-                        if (innerBlock.opcode !== 'motion_turnright' && innerBlock.opcode !== 'motion_turnleft') return false;
-                        const degId = innerBlock.inputs.DEGREES.block;
-                        return allBlocks[degId].fields.NUM.value === '10';
+                        return DrillValidators.checkTurn(innerBlocks[0], allBlocks, 10);
                     }
                 },
                 {
@@ -824,6 +885,131 @@
                         // 3個目: メッセージ「かくだい」を送る
                         if (third.opcode !== 'event_broadcast') return false;
                         return DrillValidators.getBroadcastMessage(allBlocks[third.blockId], allBlocks) === 'かくだい';
+                    }
+                },
+                {
+                    id: 36,
+                    title: '「ずっと」をつかって、\nうわむきやじるしキーを おしたとき\nyざひょうを 5ふやす',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (inner.length !== 1) return false;
+
+                        return DrillValidators.checkIfKeyPressedMove(inner[0], allBlocks, 'up arrow', 'y', 5);
+                    }
+                },
+                {
+                    id: 37,
+                    title: '「ずっと」をつかって、\n上下左右（じょうげさゆう）やじるしで 上下左右に うごかす。\nすうじは 5 か -5 をつかう',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (innerBlocks.length !== 4) return false;
+
+                        const targets = [
+                            { key: 'right arrow', axis: 'x', delta: 5 },
+                            { key: 'left arrow', axis: 'x', delta: -5 },
+                            { key: 'up arrow', axis: 'y', delta: 5 },
+                            { key: 'down arrow', axis: 'y', delta: -5 }
+                        ];
+
+                        return targets.every(t => innerBlocks.some(b => DrillValidators.checkIfKeyPressedMove(b, allBlocks, t.key, t.axis, t.delta)));
+                    }
+                },
+                {
+                    id: 38,
+                    title: '「ずっと」をつかって、\nスペースキーをおしたら ひょうじされて\nおさなかったら みえなくなる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (inner.length !== 1) return false;
+                        console.log("aaa");
+
+                        return DrillValidators.checkIfElseKeyPressedShowHide(inner[0], allBlocks, 'space');
+                    }
+                },
+                {
+                    id: 39,
+                    title: '「ずっと」をつかって、\n15ど まわしながら、\nスペースキーをおしたら ひょうじされて\nおさなかったら みえなくなる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                        if (inner.length !== 2) return false;
+
+                        // 順不同
+                        const hasTurn = inner.some(b => DrillValidators.checkTurn(b, allBlocks, 15));
+                        const hasShowHide = inner.some(b => DrillValidators.checkIfElseKeyPressedShowHide(b, allBlocks, 'space'));
+
+                        return hasTurn && hasShowHide;
+                    }
+                },
+                {
+                    id: 40,
+                    title: '「ずっと」をつかって、\nスペースキーをおしたら ひょうじされて\nおさなかったら みえなくなる。\nスペースキーを おしながら みぎむきやじるしキーも おしたら\nメッセージ「かくだい」を おくる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 1) return false;
+
+                        const ifElseBlock = inner[0];
+                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                        // 1. 条件式（スペースキーがおされた）
+                        const spaceCondId = ifElseBlock.inputs.CONDITION?.block;
+                        const spaceCondBlock = allBlocks[spaceCondId];
+                        if (!spaceCondBlock || spaceCondBlock.opcode !== 'sensing_keypressed' || !spaceCondBlock.inputs) return false;
+
+                        const spaceKeyId = spaceCondBlock.inputs.KEY_OPTION?.block;
+                        if (allBlocks[spaceKeyId]?.fields?.KEY_OPTION?.value !== 'space') return false;
+
+                        // 2. でなければ（SUBSTACK2）: かくす 1個
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0].opcode !== 'looks_hide') return false;
+
+                        // 3. もし（SUBSTACK）: ひょうじする ＋ もし右向き矢印キーなら の計2個
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 2) return false;
+
+                        const hasShow = thenBlocks.some(b => b.opcode === 'looks_show');
+                        if (!hasShow) return false;
+
+                        const rightIfBlock = thenBlocks.find(b => b.opcode === 'control_if');
+                        if (!rightIfBlock || !rightIfBlock.inputs) return false;
+
+                        // 4. 内側の「もし右向き矢印キーがおされたなら」の判定
+                        const rightCondId = rightIfBlock.inputs.CONDITION?.block;
+                        const rightCondBlock = allBlocks[rightCondId];
+                        if (!rightCondBlock || rightCondBlock.opcode !== 'sensing_keypressed' || !rightCondBlock.inputs) return false;
+
+                        const rightKeyId = rightCondBlock.inputs.KEY_OPTION?.block;
+                        if (allBlocks[rightKeyId]?.fields?.KEY_OPTION?.value !== 'right arrow') return false;
+
+                        // 5. 内側の「メッセージ『かくだい』をおくる」の判定
+                        const rightInner = DrillValidators.getInnerBlocks(rightIfBlock, allBlocks, 'SUBSTACK');
+                        if (rightInner.length !== 1) return false;
+
+                        const broadcastBlock = rightInner[0];
+                        if (broadcastBlock?.opcode !== 'event_broadcast' || !broadcastBlock.inputs) return false;
+
+                        const msgBlockId = broadcastBlock.inputs.BROADCAST_INPUT?.block;
+                        const msgValue = allBlocks[msgBlockId]?.fields?.BROADCAST_OPTION?.value;
+
+                        return msgValue === 'かくだい';
                     }
                 }
             ];
