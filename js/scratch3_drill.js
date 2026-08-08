@@ -44,6 +44,16 @@
             return allBlocks[msgId]?.fields?.BROADCAST_OPTION?.value || null;
         }
 
+        // 入力インプットの表示値・数値を安全に取得するヘルパー
+        static getInputValue(block, inputName, allBlocks) {
+            const input = block?.inputs?.[inputName];
+            if (!input) return null;
+            const targetBlock = allBlocks[input.block];
+            if (!targetBlock?.fields) return null;
+            const firstKey = Object.keys(targetBlock.fields)[0];
+            return targetBlock.fields[firstKey]?.value;
+        }
+
         // ずっと5歩動いて、もし端についたらはねかえる
         static checkForeverMoveAndBounce(foreverBlockId, allBlocks) {
             const foreverBlock = allBlocks[foreverBlockId];
@@ -145,6 +155,40 @@
 
             const degId = block.inputs.DEGREES?.block;
             return allBlocks[degId]?.fields?.NUM?.value === String(degrees);
+        }
+
+        // 不等号・等号の向き（正順 / 逆順）に対応した数値比較判定ヘルパー
+        // relation: 'gt' (大きければ), 'lt' (小さければ), 'eq' (等しければ)
+        static checkComparison(block, allBlocks, targetOpcode, relation, expectedValue) {
+            if (!block || !block.inputs) return false;
+
+            const val1 = block.inputs.OPERAND1?.block;
+            const val2 = block.inputs.OPERAND2?.block;
+
+            const isVal1Target = allBlocks[val1]?.opcode === targetOpcode;
+            const isVal2Target = allBlocks[val2]?.opcode === targetOpcode;
+
+            const num1 = this.getInputValue(block, 'OPERAND1', allBlocks);
+            const num2 = this.getInputValue(block, 'OPERAND2', allBlocks);
+
+            const expectedStr = String(expectedValue);
+
+            if (relation === 'gt') {
+                // [xざひょう > 100] または [100 < xざひょう]
+                if (block.opcode === 'operator_gt' && isVal1Target && String(num2) === expectedStr) return true;
+                if (block.opcode === 'operator_lt' && isVal2Target && String(num1) === expectedStr) return true;
+            } else if (relation === 'lt') {
+                // [xざひょう < 100] または [100 > xざひょう]
+                if (block.opcode === 'operator_lt' && isVal1Target && String(num2) === expectedStr) return true;
+                if (block.opcode === 'operator_gt' && isVal2Target && String(num1) === expectedStr) return true;
+            } else if (relation === 'eq' || relation === 'equals') {
+                // [xざひょう = 100] または [100 = xざひょう]
+                if (block.opcode === 'operator_equals') {
+                    if (isVal1Target && String(num2) === expectedStr) return true;
+                    if (isVal2Target && String(num1) === expectedStr) return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -1009,6 +1053,209 @@
                         const msgValue = allBlocks[msgBlockId]?.fields?.BROADCAST_OPTION?.value;
 
                         return msgValue === 'かくだい';
+                    }
+                },
+                {
+                    id: 41,
+                    title: 'まず どこかのばしょへ いって、\nxざひょうが 100よりも おおきかったら\nおおきさを 50%にして、\nでなければ おおきさを 100%にする。\n※なんども ためしに うごかしてみよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+
+                        const gotoBlock = allBlocks[userSequence[0].blockId];
+                        if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
+                        const menuId = gotoBlock.inputs.TO?.block;
+                        if (allBlocks[menuId]?.fields?.TO?.value !== '_random_') return false;
+
+                        const ifElseBlock = allBlocks[userSequence[1].blockId];
+                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_xposition', 'gt', 100)) return false;
+
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
+
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 42,
+                    title: 'まず どこかのばしょへ いって、\nxざひょうが 100よりも おおきいか\nyざひょうが 100よりも おおきいかの どちらかだったら\nおおきさを 50%にして、\nでなければ おおきさを 100%にする。\n※なんども ためしに うごかしてみよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+
+                        // 1. どこかのばしょへいく
+                        const gotoBlock = allBlocks[userSequence[0].blockId];
+                        if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
+                        const menuId = gotoBlock.inputs.TO?.block;
+                        if (allBlocks[menuId]?.fields?.TO?.value !== '_random_') return false;
+
+                        // 2. もし〜でなければ
+                        const ifElseBlock = allBlocks[userSequence[1].blockId];
+                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                        // 2-1. 条件式（「xざひょう > 100」 または 「yざひょう > 100」）
+                        const orBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (orBlock?.opcode !== 'operator_or' || !orBlock.inputs) return false;
+
+                        const leftCond = allBlocks[orBlock.inputs.OPERAND1?.block];
+                        const rightCond = allBlocks[orBlock.inputs.OPERAND2?.block];
+
+                        const isXGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_xposition', 'gt', 100);
+                        const isYGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_yposition', 'gt', 100);
+
+                        const hasXOrY = (isXGt100(leftCond) && isYGt100(rightCond)) ||
+                                    (isYGt100(leftCond) && isXGt100(rightCond));
+                        if (!hasXOrY) return false;
+
+                        // 2-2. もし: おおきさを 50%にする
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
+
+                        // 2-3. でなければ: おおきさを 100%にする
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 43,
+                    title: 'yざひょうを ずっと 5 ふやしつづける。\nyざひょうが 100に なったときに\n1びょう とまる',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 2) return false;
+                        
+                        // 1. yざひょうを 5 ふやす
+                        const changeYBlock = inner.find(b => b.opcode === 'motion_changeyby');
+                        if (!changeYBlock) return false;
+                        if (String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) !== '5') return false;
+                    
+                        // 2. もし（yざひょう = 100）なら
+                        const ifBlock = inner.find(b => b.opcode === 'control_if');
+                        if (!ifBlock || !ifBlock.inputs) return false;
+                        
+                        const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_yposition', 'eq', 100)) return false;
+                    
+                        // 3. 内側の「1びょうとまる」
+                        const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                        if (ifInner.length !== 1 || ifInner[0]?.opcode !== 'control_wait') return false;
+                        if (String(DrillValidators.getInputValue(ifInner[0], 'DURATION', allBlocks)) !== '1') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 44,
+                    title: 'かいてんほうほうを さゆうのみに してから\nずっと 5ほ うごきつづけて、\nはしに ついたら はねかえる。\nxざひょうが 100よりも おおきいときに\nおおきさを 50%にして、\nそうではないときに おおきさを 100%にする',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+
+                        // 1. かいてんほうほうを さゆうのみにする
+                        const styleBlock = allBlocks[userSequence[0].blockId];
+                        if (styleBlock?.opcode !== 'motion_setrotationstyle') return false;
+                        if (styleBlock.fields?.STYLE?.value !== 'left-right') return false;
+
+                        // 2. ずっと
+                        const foreverBlock = allBlocks[userSequence[1].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 3) return false;
+
+                        // 2-1. 5ほ うごく
+                        const moveBlock = inner.find(b => b.opcode === 'motion_movesteps');
+                        if (!moveBlock) return false;
+                        if (String(DrillValidators.getInputValue(moveBlock, 'STEPS', allBlocks)) !== '5') return false;
+
+                        // 2-2. はしに ついたら はねかえる
+                        const bounceBlock = inner.find(b => b.opcode === 'motion_ifonedgebounce');
+                        if (!bounceBlock) return false;
+
+                        // 2-3. もし（xざひょう > 100）なら
+                        const ifElseBlock = inner.find(b => b.opcode === 'control_if_else');
+                        if (!ifElseBlock || !ifElseBlock.inputs) return false;
+
+                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_xposition', 'gt', 100)) return false;
+
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
+
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 45,
+                    title: 'かいてんほうほうを さゆうのみに してから\nずっと 5ほ うごきつづけて、\nはしに ついたら はねかえる。\nxざひょうが 100から150 のときに\nおおきさを 50%にして、\nそうではないときに おおきさを 100%にする',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+
+                        // 1. かいてんほうほうを さゆうのみにする
+                        const styleBlock = allBlocks[userSequence[0].blockId];
+                        if (styleBlock?.opcode !== 'motion_setrotationstyle') return false;
+                        if (styleBlock.fields?.STYLE?.value !== 'left-right') return false;
+
+                        // 2. ずっと
+                        const foreverBlock = allBlocks[userSequence[1].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 3) return false;
+
+                        // 2-1. 5ほ うごく
+                        const moveBlock = inner.find(b => b.opcode === 'motion_movesteps');
+                        if (!moveBlock) return false;
+                        if (String(DrillValidators.getInputValue(moveBlock, 'STEPS', allBlocks)) !== '5') return false;
+
+                        // 2-2. はしに ついたら はねかえる
+                        const bounceBlock = inner.find(b => b.opcode === 'motion_ifonedgebounce');
+                        if (!bounceBlock) return false;
+
+                        // 2-3. もし（xざひょう > 100 かつ xざひょう < 150）なら
+                        const ifElseBlock = inner.find(b => b.opcode === 'control_if_else');
+                        if (!ifElseBlock || !ifElseBlock.inputs) return false;
+
+                        const andBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (andBlock?.opcode !== 'operator_and' || !andBlock.inputs) return false;
+
+                        const op1Block = allBlocks[andBlock.inputs.OPERAND1?.block];
+                        const op2Block = allBlocks[andBlock.inputs.OPERAND2?.block];
+
+                        const checkGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_xposition', 'gt', 100);
+                        const checkLt150 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_xposition', 'lt', 150);
+
+                        const isValidCond = (checkGt100(op1Block) && checkLt150(op2Block)) ||
+                                            (checkLt150(op1Block) && checkGt100(op2Block));
+                        if (!isValidCond) return false;
+
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
+
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
+                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
+
+                        return true;
                     }
                 }
             ];
