@@ -1352,6 +1352,36 @@
             return null; 
         }
 
+        // 変数名（文字列）を指定して、その値を変更する関数
+        setVariableValueByName(varName, value) {
+            const stage = this.runtime.getTargetForStage();
+            if (stage && stage.variables) {
+                for (const id in stage.variables) {
+                    if (stage.variables[id].name === varName) {
+                        stage.variables[id].value = value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 変数名（文字列）を指定して、画面上の表示/非表示を切り替える関数
+        setVariableVisible(varName, visible) {
+            const stage = this.runtime.getTargetForStage();
+            if (!stage || !stage.variables) return;
+
+            for (const id in stage.variables) {
+                if (stage.variables[id].name === varName) {
+                    this.runtime.requestUpdateMonitor(new Map([
+                        ['id', id],
+                        ['visible', visible]
+                    ]));
+                    console.log("Visibility of variable '", varName, "' was set ", visible);
+                    break;
+                }
+            }
+        }
+
         isValidQuestionId (args) {
             const startQuestionId = this.getVariableValueByName('スタートばんごう');
             if (!this.questions || this.questions.length === 0) return false;
@@ -1414,13 +1444,16 @@
                 judge.setSize(30);
                 judge.setVisible(true);  
                 judge.setCostume(0);
-            } if (post) {
+            }
+            if (post) {
                 post.setXY(-190, -140);
                 post.setDirection(90);
                 post.setSize(25);
                 post.setVisible(true);  
                 post.setCostume(0);
             }
+            this.setVariableValueByName('のこりじかん', -1);
+            this.setVariableVisible('のこりじかん', false);
         }
 
         testRun (args, util) {
@@ -1428,9 +1461,29 @@
             const activePlayButton = playButton || util.target;
             
             if (cat) {
+                // 1. スプライトと変数を初期化
                 this.initializeSprites();
 
-                this.sayFromJudge('')
+                // 2. 前回の変数監視タイマーが残っていればクリア
+                if (this._varCheckInterval) {
+                    clearInterval(this._varCheckInterval);
+                }
+
+                // 3. 100msごとに変数を監視（VMのステップ状態に依存しない）
+                this._varCheckInterval = setInterval(() => {
+                        const val = this.getVariableValueByName('のこりじかん');
+                    console.log("Now のこりじかん is ", val);
+
+                    // 初期値(-1)以外に変更されたら表示して監視を終了
+                        if (val !== null && val !== -1 && val !== '-1') {
+                            this.setVariableVisible('のこりじかん', true);
+                        clearInterval(this._varCheckInterval);
+                        this._varCheckInterval = null;
+                        }
+                }, 100);
+
+                // 4. 掛け声演出とハットブロックの起動処理
+                this.sayFromJudge('');
                 this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
 
                 setTimeout(() => {
