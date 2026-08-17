@@ -248,8 +248,7 @@
                         if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
-                        const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '100';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '100';
                     }
                 },
                 {
@@ -259,8 +258,7 @@
                         if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
-                        const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '200';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '200';
                     }
                 },
                 {
@@ -270,8 +268,7 @@
                         if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         if (first.opcode !== 'motion_movesteps') return false;
-                        const numBlockId = allBlocks[first.blockId].inputs.STEPS.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '-100';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '-100';
                     }
                 },
                 {
@@ -283,16 +280,13 @@
                         const [first, second, third] = userSequence;
                         
                         if (first.opcode !== 'motion_movesteps') return false;
-                        const firstStepsId = allBlocks[first.blockId].inputs.STEPS.block;
-                        if (allBlocks[firstStepsId].fields.NUM.value !== '100') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_movesteps') return false;
-                        const thirdStepsId = allBlocks[third.blockId].inputs.STEPS.block;
-                        if (allBlocks[thirdStepsId].fields.NUM.value !== '-50') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '-50') return false;
 
                         return true;
                     }
@@ -306,16 +300,13 @@
                         const [first, second, third] = userSequence;
                         
                         if (first.opcode !== 'motion_movesteps') return false;
-                        const firstStepsId = allBlocks[first.blockId].inputs.STEPS.block;
-                        if (allBlocks[firstStepsId].fields.NUM.value !== '100') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_movesteps') return false;
-                        const thirdStepsId = allBlocks[third.blockId].inputs.STEPS.block;
-                        if (allBlocks[thirdStepsId].fields.NUM.value !== '-100') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '-100') return false;
 
                         return true;
                     }
@@ -328,11 +319,9 @@
                         const [first] = userSequence;
                         
                         if (first.opcode == 'motion_turnright') {
-                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            return allBlocks[numBlockId].fields.NUM.value === '15';
+                            return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) === '15';
                         } else if (first.opcode == 'motion_turnleft') {
-                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            return allBlocks[numBlockId].fields.NUM.value === '-15';
+                            return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) === '-15';
                         }
                         return false;
                     }
@@ -344,13 +333,10 @@
                         if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
                         
-                        
                         if (first.opcode == 'motion_turnright') {
-                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[numBlockId].fields.NUM.value !== '-45') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '-45') return false;
                         } else if (first.opcode == 'motion_turnleft') {
-                            const numBlockId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[numBlockId].fields.NUM.value !== '45') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '45') return false;
                         }
                         return true;
                     }
@@ -363,8 +349,7 @@
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_pointindirection') return false;
-                        const numBlockId = allBlocks[first.blockId].inputs.DIRECTION.block;
-                        return allBlocks[numBlockId].fields.NUM.value === '180';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) === '180';
                     }
                 },
                 {
@@ -375,23 +360,18 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode == 'motion_turnright') {
-                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[firstDegId].fields.NUM.value !== '90') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '90') return false;
                         } else if (first.opcode == 'motion_turnleft') {
-                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[firstDegId].fields.NUM.value !== '-90') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '-90') return false;
                         }
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode == 'motion_turnright') {
-                            const thirdDegId = allBlocks[third.blockId].inputs.DEGREES.block;
-                            if (allBlocks[thirdDegId].fields.NUM.value !== '-90') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DEGREES', allBlocks)) !== '-90') return false;
                         } else if (third.opcode == 'motion_turnleft') {
-                            const thirdDegId = allBlocks[third.blockId].inputs.DEGREES.block;
-                            if (allBlocks[thirdDegId].fields.NUM.value !== '90') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DEGREES', allBlocks)) !== '90') return false;
                         }
 
                         return true;
@@ -405,22 +385,16 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode == 'motion_turnright') {
-                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[firstDegId].fields.NUM.value !== '45') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '45') return false;
                         } else if (first.opcode == 'motion_turnleft') {
-                            const firstDegId = allBlocks[first.blockId].inputs.DEGREES.block;
-                            if (allBlocks[firstDegId].fields.NUM.value !== '-45') return false;
+                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '-45') return false;
                         }
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_pointindirection') return false;
-                        const dirId = allBlocks[third.blockId].inputs.DIRECTION.block;
-                        if (allBlocks[dirId].fields.NUM.value !== '-90') return false;
-
-                        return true;
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DIRECTION', allBlocks)) === '-90';
                     }
                 },
                 {
@@ -431,8 +405,7 @@
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_setx') return false;
-                        const xId = allBlocks[first.blockId].inputs.X.block;
-                        return allBlocks[xId].fields.NUM.value === '100';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'X', allBlocks)) === '100';
                     }
                 },
                 {
@@ -443,8 +416,7 @@
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_sety') return false;
-                        const yId = allBlocks[first.blockId].inputs.Y.block;
-                        return allBlocks[yId].fields.NUM.value === '100';
+                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'Y', allBlocks)) === '100';
                     }
                 },
                 {
@@ -455,9 +427,9 @@
                         const [first] = userSequence;
                         
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const xId = allBlocks[first.blockId].inputs.X.block;
-                        const yId = allBlocks[first.blockId].inputs.Y.block;
-                        return allBlocks[xId].fields.NUM.value === '120' && allBlocks[yId].fields.NUM.value === '60';
+                        const gotoBlock = allBlocks[first.blockId];
+                        return String(DrillValidators.getInputValue(gotoBlock, 'X', allBlocks)) === '120' &&
+                            String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '60';
                     }
                 },
                 {
@@ -467,18 +439,17 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
                         
                         if (third.opcode !== 'motion_gotoxy') return false;
-                        const xId = allBlocks[third.blockId].inputs.X.block;
-                        const yId = allBlocks[third.blockId].inputs.Y.block;
-                        return allBlocks[xId].fields.NUM.value === '-120' && allBlocks[yId].fields.NUM.value === '-60';
+                        const thirdBlock = allBlocks[third.blockId];
+                        return String(DrillValidators.getInputValue(thirdBlock, 'X', allBlocks)) === '-120' &&
+                            String(DrillValidators.getInputValue(thirdBlock, 'Y', allBlocks)) === '-60';
                     }
                 },
                 {
@@ -489,17 +460,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changexby') return false;
-                        const dxId = allBlocks[third.blockId].inputs.DX.block;
-                        return allBlocks[dxId].fields.NUM.value === '30';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '30';
                     }
                 },
                 {
@@ -510,17 +479,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changeyby') return false;
-                        const dyId = allBlocks[third.blockId].inputs.DY.block;
-                        return allBlocks[dyId].fields.NUM.value === '-40';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-40';
                     }
                 },
                 {
@@ -531,17 +498,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changexby') return false;
-                        const dxId = allBlocks[third.blockId].inputs.DX.block;
-                        return allBlocks[dxId].fields.NUM.value === '80';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '80';
                     }
                 },
                 {
@@ -552,17 +517,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changexby') return false;
-                        const dxId = allBlocks[third.blockId].inputs.DX.block;
-                        return allBlocks[dxId].fields.NUM.value === '-80';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '-80';
                     }
                 },
                 {
@@ -573,17 +536,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changeyby') return false;
-                        const dyId = allBlocks[third.blockId].inputs.DY.block;
-                        return allBlocks[dyId].fields.NUM.value === '40';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '40';
                     }
                 },
                 {
@@ -594,17 +555,15 @@
                         const [first, second, third] = userSequence;
 
                         if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstX = allBlocks[first.blockId].inputs.X.block;
-                        const firstY = allBlocks[first.blockId].inputs.Y.block;
-                        if (allBlocks[firstX].fields.NUM.value !== '120' || allBlocks[firstY].fields.NUM.value !== '60') return false;
+                        const firstBlock = allBlocks[first.blockId];
+                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
 
                         if (second.opcode !== 'control_wait') return false;
-                        const waitId = allBlocks[second.blockId].inputs.DURATION.block;
-                        if (allBlocks[waitId].fields.NUM.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
 
                         if (third.opcode !== 'motion_changeyby') return false;
-                        const dyId = allBlocks[third.blockId].inputs.DY.block;
-                        return allBlocks[dyId].fields.NUM.value === '-100';
+                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-100';
                     }
                 },
                 {
@@ -635,8 +594,7 @@
                         const innerBlock = innerBlocks[0];
 
                         if (innerBlock.opcode !== 'motion_movesteps') return false;
-                        const stepsId = innerBlock.inputs.STEPS.block;
-                        return allBlocks[stepsId].fields.NUM.value === '5';
+                        return String(DrillValidators.getInputValue(innerBlock, 'STEPS', allBlocks)) === '5';
                     }
                 },
                 {
@@ -658,12 +616,10 @@
                         if (!waitBlock || !moveBlock) return false;
 
                         // 1秒待つ
-                        const durId = waitBlock.inputs.DURATION?.block;
-                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
 
                         // 5歩動く
-                        const stepsId = moveBlock.inputs.STEPS?.block;
-                        return stepsId && allBlocks[stepsId]?.fields?.NUM?.value === '5';
+                        return String(DrillValidators.getInputValue(moveBlock, 'STEPS', allBlocks)) === '5';
                     }
                 },
                 {
@@ -699,21 +655,9 @@
                         if (userSequence.length !== 1) return false;
                         const [first] = userSequence;
 
-                        if (first.opcode !== 'control_repeat') return false;
-                        const repeatBlock = allBlocks[first.blockId];
-
-                        if (!repeatBlock.inputs.TIMES) return false;
-                        const timesId = repeatBlock.inputs.TIMES.block;
-                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '5') return false;
-
-                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
-                        if (innerBlocks.length !== 1) return false;
-
-                        const [inner] = innerBlocks;
-                        if (inner.opcode !== 'motion_changeyby') return false;
-
-                        const dyId = inner.inputs.DY?.block;
-                        return dyId && allBlocks[dyId]?.fields?.NUM?.value === '20';
+                        return DrillValidators.checkRepeatChangeCoord(
+                            allBlocks[first.blockId], allBlocks, 'y', 20, 5
+                        );
                     }
                 },
                 {
@@ -726,9 +670,7 @@
                         if (first.opcode !== 'control_repeat') return false;
                         const repeatBlock = allBlocks[first.blockId];
 
-                        if (!repeatBlock.inputs.TIMES) return false;
-                        const timesId = repeatBlock.inputs.TIMES.block;
-                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '5') return false;
+                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
 
                         const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
                         if (innerBlocks.length !== 2) return false;
@@ -739,12 +681,10 @@
                         if (!waitBlock || !changeYBlock) return false;
 
                         // 1秒
-                        const durId = waitBlock.inputs.DURATION?.block;
-                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
 
                         // y座標 +20
-                        const dyId = changeYBlock.inputs.DY?.block;
-                        return dyId && allBlocks[dyId]?.fields?.NUM?.value === '20';
+                        return String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) === '20';
                     }
                 },
                 {
@@ -757,9 +697,7 @@
                         if (first.opcode !== 'control_repeat') return false;
                         const repeatBlock = allBlocks[first.blockId];
 
-                        if (!repeatBlock.inputs.TIMES) return false;
-                        const timesId = repeatBlock.inputs.TIMES.block;
-                        if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== '5') return false;
+                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
 
                         const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
                         if (innerBlocks.length !== 2) return false;
@@ -770,31 +708,21 @@
                         if (!waitBlock || !changeYBlock) return false;
 
                         // 1秒
-                        const durId = waitBlock.inputs.DURATION?.block;
-                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
 
                         // y座標 20
-                        const dyId = changeYBlock.inputs.DY?.block;
-                        if (!dyId || allBlocks[dyId]?.fields?.NUM?.value !== '20') return false;
+                        if (String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) !== '20') return false;
 
                         // パターンA: 「yざひょうを 0 にする」
                         if (second.opcode === 'motion_sety') {
                             const setyBlock = allBlocks[second.blockId];
-                            const yId = setyBlock.inputs.Y?.block;
-                            if (!yId) return false;
-
-                            const yVal = allBlocks[yId]?.fields?.NUM?.value;
-                            return yVal === '0';
+                            return String(DrillValidators.getInputValue(setyBlock, 'Y', allBlocks)) === '0';
                         }
 
                         // パターンB: 「x: ◯ y: 0 にいく」 (y座標が0であれば正解)
                         if (second.opcode === 'motion_gotoxy') {
                             const gotoBlock = allBlocks[second.blockId];
-                            const yId = gotoBlock.inputs.Y?.block;
-                            if (!yId) return false;
-
-                            const yVal = allBlocks[yId]?.fields?.NUM?.value;
-                            return yVal === '0';
+                            return String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '0';
                         }
 
                         // どちらでもなければ不正解
@@ -816,8 +744,7 @@
                         const condBlock = allBlocks[condId];
                         if (!condBlock || condBlock.opcode !== 'sensing_keypressed') return false;
 
-                        const keyMenuId = condBlock.inputs.KEY_OPTION?.block;
-                        if (!keyMenuId || allBlocks[keyMenuId]?.fields?.KEY_OPTION?.value !== 'space') return false;
+                        if (DrillValidators.getInputValue(condBlock, 'KEY_OPTION', allBlocks) !== 'space') return false;
 
                         const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
                         if (innerBlocks.length !== 1) return false;
@@ -825,8 +752,7 @@
                         const [inner] = innerBlocks;
                         if (inner.opcode !== 'motion_changexby') return false;
 
-                        const dxId = inner.inputs.DX?.block;
-                        return dxId && allBlocks[dxId]?.fields?.NUM?.value === '-2';
+                        return String(DrillValidators.getInputValue(inner, 'DX', allBlocks)) === '-2';
                     }
                 },
                 {
@@ -844,8 +770,7 @@
                         const condBlock = allBlocks[condId];
                         if (!condBlock || condBlock.opcode !== 'sensing_touchingobject') return false;
 
-                        const menuId = condBlock.inputs.TOUCHINGOBJECTMENU?.block;
-                        if (!menuId || allBlocks[menuId]?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+                        if (DrillValidators.getInputValue(condBlock, 'TOUCHINGOBJECTMENU', allBlocks) !== '_edge_') return false;
 
                         const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
                         if (innerBlocks.length !== 1) return false;
@@ -853,29 +778,19 @@
                         const [inner] = innerBlocks;
                         if (inner.opcode !== 'motion_changexby') return false;
 
-                        const dxId = inner.inputs.DX?.block;
-                        if (!dxId || allBlocks[dxId]?.fields?.NUM?.value !== '-2') return false;
+                        if (String(DrillValidators.getInputValue(inner, 'DX', allBlocks)) !== '-2') return false;
 
                         // パターンA: 「x: 0 y: 0 にいく」
                         if (second.opcode === 'motion_gotoxy') {
                             const gotoBlock = allBlocks[second.blockId];
-                            const xId = gotoBlock.inputs.X?.block;
-                            const yId = gotoBlock.inputs.Y?.block;
-                            if (!xId || !yId) return false;
-
-                            const xVal = allBlocks[xId]?.fields?.NUM?.value;
-                            const yVal = allBlocks[yId]?.fields?.NUM?.value;
-                            return xVal === '0' && yVal === '0';
+                            return String(DrillValidators.getInputValue(gotoBlock, 'X', allBlocks)) === '0' &&
+                                String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '0';
                         }
 
                         // パターンB: 「xざひょうを 0 にする」
                         if (second.opcode === 'motion_setx') {
                             const setxBlock = allBlocks[second.blockId];
-                            const xId = setxBlock.inputs.X?.block;
-                            if (!xId) return false;
-
-                            const xVal = allBlocks[xId]?.fields?.NUM?.value;
-                            return xVal === '0';
+                            return String(DrillValidators.getInputValue(setxBlock, 'X', allBlocks)) === '0';
                         }
 
                         // どちらでもなければ不正解
@@ -962,8 +877,7 @@
                         // 2個目: 1秒待つ
                         if (second.opcode !== 'control_wait') return false;
                         const waitBlock = allBlocks[second.blockId];
-                        const durId = waitBlock?.inputs?.DURATION?.block;
-                        if (!durId || allBlocks[durId]?.fields?.NUM?.value !== '1') return false;
+                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
 
                         // 3個目: メッセージ「かくだい」を送る
                         if (third.opcode !== 'event_broadcast') return false;
@@ -1056,8 +970,7 @@
                         const spaceCondBlock = allBlocks[spaceCondId];
                         if (!spaceCondBlock || spaceCondBlock.opcode !== 'sensing_keypressed' || !spaceCondBlock.inputs) return false;
 
-                        const spaceKeyId = spaceCondBlock.inputs.KEY_OPTION?.block;
-                        if (allBlocks[spaceKeyId]?.fields?.KEY_OPTION?.value !== 'space') return false;
+                        if (DrillValidators.getInputValue(spaceCondBlock, 'KEY_OPTION', allBlocks) !== 'space') return false;
 
                         // 2. でなければ（SUBSTACK2）: おおきさを -1 ずつかえる 1個
                         const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
@@ -1082,8 +995,7 @@
                         const rightCondBlock = allBlocks[rightCondId];
                         if (!rightCondBlock || rightCondBlock.opcode !== 'sensing_keypressed' || !rightCondBlock.inputs) return false;
 
-                        const rightKeyId = rightCondBlock.inputs.KEY_OPTION?.block;
-                        if (allBlocks[rightKeyId]?.fields?.KEY_OPTION?.value !== 'right arrow') return false;
+                        if (DrillValidators.getInputValue(rightCondBlock, 'KEY_OPTION', allBlocks) !== 'right arrow') return false;
 
                         // 5. 内側の「メッセージ『かくだい』をおくる」の判定
                         const rightInner = DrillValidators.getInnerBlocks(rightIfBlock, allBlocks, 'SUBSTACK');
@@ -1103,8 +1015,7 @@
 
                         const gotoBlock = allBlocks[userSequence[0].blockId];
                         if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
-                        const menuId = gotoBlock.inputs.TO?.block;
-                        if (allBlocks[menuId]?.fields?.TO?.value !== '_random_') return false;
+                        if (DrillValidators.getInputValue(gotoBlock, 'TO', allBlocks) !== '_random_') return false;
 
                         const ifElseBlock = allBlocks[userSequence[1].blockId];
                         if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
@@ -1132,8 +1043,7 @@
                         // 1. どこかのばしょへいく
                         const gotoBlock = allBlocks[userSequence[0].blockId];
                         if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
-                        const menuId = gotoBlock.inputs.TO?.block;
-                        if (allBlocks[menuId]?.fields?.TO?.value !== '_random_') return false;
+                        if (DrillValidators.getInputValue(gotoBlock, 'TO', allBlocks) !== '_random_') return false;
 
                         // 2. もし〜でなければ
                         const ifElseBlock = allBlocks[userSequence[1].blockId];
