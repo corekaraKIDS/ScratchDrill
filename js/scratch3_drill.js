@@ -210,6 +210,25 @@
             const val = this.getInputValue(block, 'VALUE', allBlocks);
             return String(val) === String(value);
         }
+
+        // 乱数ブロック (operator_random) の範囲判定
+        static checkRandom(block, allBlocks, from, to) {
+            if (!block || block.opcode !== 'operator_random' || !block.inputs) return false;
+            const fromVal = this.getInputValue(block, 'FROM', allBlocks);
+            const toVal = this.getInputValue(block, 'TO', allBlocks);
+            return String(fromVal) === String(from) && String(toVal) === String(to);
+        }
+
+        // 変数を「〇〇から△△までの乱数」にする判定
+        static checkSetVariableToRandom(block, allBlocks, varName, from, to) {
+            if (!block || block.opcode !== 'data_setvariableto' || !block.fields) return false;
+            const varField = block.fields.VARIABLE;
+            if (!varField || (varField.value !== varName && varField.id !== varName)) return false;
+
+            const valInputId = block.inputs?.VALUE?.block;
+            const valBlock = allBlocks[valInputId];
+            return this.checkRandom(valBlock, allBlocks, from, to);
+        }
     }
 
     // ドリル本体
@@ -1436,6 +1455,180 @@
 
                         return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === '１かいてん';
                     }
+                },
+                {
+                    id: 51,
+                    title: 'へんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※なんども ためしに うごかしてみよう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 2) return false;
+
+                        // 1. 変数「ランダム」を 0から1の乱数にする
+                        const setVarBlock = allBlocks[userSequence[0].blockId];
+                        if (!DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', 0, 1)) return false;
+
+                        // 2. もし〜でなければ
+                        const ifElseBlock = allBlocks[userSequence[1].blockId];
+                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                        // 2-1. 条件式（「ランダム」= 0）
+                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                        // 2-2. もし: かくす 1個
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
+
+                        // 2-3. でなければ: ひょうじする 1個
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
+
+                        return true;
+                    }
+                },
+                {
+                    id: 52,
+                    title: 'ずっと 1びょうごとに\nへんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※「1びょうまつ」は さいごに かこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 3) return false;
+                        const [randBlock, ifElseBlock, waitBlock] = inner;
+
+                        if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 1)) return false;
+
+                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
+
+                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
+
+                        if (waitBlock?.opcode !== 'control_wait') return false;
+                        return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
+                    }
+                },
+                {
+                    id: 53,
+                    title: 'ずっと xざひょうを 2 ふやしながら、\nへんすう「ランダム」を\n-10から10までの らんすうに して、\nyざひょうを「ランダム」のかずに する',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+
+                        const foreverBlock = allBlocks[userSequence[0].blockId];
+                        if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 3) return false;
+
+                        // 1. xざひょうを 2 ふやす
+                        const changeXBlock = inner.find(b => b.opcode === 'motion_changexby');
+                        if (!changeXBlock) return false;
+                        if (String(DrillValidators.getInputValue(changeXBlock, 'DX', allBlocks)) !== '2') return false;
+
+                        // 2. 変数「ランダム」を -10から10までの乱数にする
+                        const setVarBlock = inner.find(b => b.opcode === 'data_setvariableto');
+                        if (!setVarBlock || !DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', -10, 10)) return false;
+
+                        // 3. yざひょうを「ランダム」のかずにする
+                        const setYBlock = inner.find(b => b.opcode === 'motion_sety');
+                        if (!setYBlock || !setYBlock.inputs) return false;
+
+                        const yValBlock = allBlocks[setYBlock.inputs.Y?.block];
+                        if (yValBlock?.opcode !== 'data_variable' || !yValBlock.fields) return false;
+                        const varField = yValBlock.fields.VARIABLE;
+                        if (!varField || (varField.value !== 'ランダム' && varField.id !== 'ランダム')) return false;
+
+                        return;
+                    }
+                },
+                {
+                    id: 54,
+                    title: '1びょうごとに\nへんすう「ランダム」を\n0から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n※「1びょうまつ」は さいごに かこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+
+                        const repeatUntilBlock = allBlocks[userSequence[0].blockId];
+                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                        // 端に触れたか判定
+                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                        if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+                        const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                        if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 3) return false;
+                        const [randBlock, changeXBlock, waitBlock] = inner;
+
+                        // 1. 変数「ランダム」を 0から30の乱数にする
+                        if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 30)) return false;
+
+                        // 2. xざひょうを「ランダム」ずつ変える
+                        if (changeXBlock?.opcode !== 'motion_changexby' || !changeXBlock.inputs) return false;
+                        const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
+                        if (dxBlock?.opcode !== 'data_variable') return false;
+                        const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
+                        if (varName !== 'ランダム') return false;
+
+                        // 3. 1秒まつ（最後）
+                        if (waitBlock?.opcode !== 'control_wait') return false;
+                        return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
+                    }
+                },
+                {
+                    id: 55,
+                    title: '1びょうごとに\nへんすう「ランダム」を\n-10から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n「ランダム」が 0より ちいさいときは 15ど まわす。\n※「1びょうまつ」は さいごに かこう！',
+                    validate: (userSequence, allBlocks) => {
+                        if (userSequence.length !== 1) return false;
+
+                        const repeatUntilBlock = allBlocks[userSequence[0].blockId];
+                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                        // 端に触れたか判定
+                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                        if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+                        const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                        if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                        if (inner.length !== 4) return false;
+
+                        // 1. 変数「ランダム」を -10から30の乱数にする（最初）
+                        if (!DrillValidators.checkSetVariableToRandom(inner[0], allBlocks, 'ランダム', -10, 30)) return false;
+
+                        // 4. 1秒まつ（最後）
+                        const waitBlock = inner[3];
+                        if (waitBlock?.opcode !== 'control_wait') return false;
+                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                        // 2と3: 中間の2つ（x座標変更 & もし「ランダム」< 0）
+                        const middleBlocks = [inner[1], inner[2]];
+
+                        const changeXBlock = middleBlocks.find(b => b?.opcode === 'motion_changexby');
+                        if (!changeXBlock || !changeXBlock.inputs) return false;
+                        const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
+                        if (dxBlock?.opcode !== 'data_variable') return false;
+                        const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
+                        if (varName !== 'ランダム') return false;
+
+                        const ifBlock = middleBlocks.find(b => b?.opcode === 'control_if');
+                        if (!ifBlock || !ifBlock.inputs) return false;
+
+                        const ifCondBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                        if (!DrillValidators.checkComparison(ifCondBlock, allBlocks, 'data_variable', 'lt', 0)) return false;
+
+                        const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                        if (ifInner.length !== 1) return false;
+
+                        return DrillValidators.checkTurn(ifInner[0], allBlocks, 15);
+                    }
                 }
             ];
         }
@@ -1658,7 +1851,7 @@
                         console.log(`Now ${varName} is `, val);
 
                         // 初期値(-1)以外に変更されたら表示し、監視対象から外す
-                    if (val !== null && val !== -1 && val !== '-1') {
+                        if (val !== null && val !== -1 && val !== '-1') {
                             this.setVariableVisible(varName, true);
                             pendingVars.delete(varName);
                         }
