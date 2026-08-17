@@ -457,8 +457,8 @@
                         if (allBlocks[waitId].fields.NUM.value !== '1') return false;
                         
                         if (third.opcode !== 'motion_gotoxy') return false;
-                        const xId = allBlocks[first.blockId].inputs.X.block;
-                        const yId = allBlocks[first.blockId].inputs.Y.block;
+                        const xId = allBlocks[third.blockId].inputs.X.block;
+                        const yId = allBlocks[third.blockId].inputs.Y.block;
                         return allBlocks[xId].fields.NUM.value === '-120' && allBlocks[yId].fields.NUM.value === '-60';
                     }
                 },
