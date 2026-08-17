@@ -1630,6 +1630,8 @@
             }
             this.setVariableValueByName('のこりじかん', -1);
             this.setVariableVisible('のこりじかん', false);
+            this.setVariableValueByName('ランダム', -1);
+            this.setVariableVisible('ランダム', false);
         }
 
         testRun (args, util) {
@@ -1640,25 +1642,36 @@
                 // 1. スプライトと変数を初期化
                 this.initializeSprites();
 
-                // 2. 前回の変数監視タイマーが残っていればクリア
+                // 2.1. 監視したい変数名を配列で指定
+                const targetVars = ['のこりじかん', 'ランダム']; // 必要に応じて追加・変更
+                const pendingVars = new Set(targetVars);
+
+                // 2.2. 前回の変数監視タイマーが残っていればクリア
                 if (this._varCheckInterval) {
                     clearInterval(this._varCheckInterval);
                 }
 
-                // 3. 100msごとに変数を監視（VMのステップ状態に依存しない）
+                // 2.3. 100msごとに変数を監視（VMのステップ状態に依存しない）
                 this._varCheckInterval = setInterval(() => {
-                    const val = this.getVariableValueByName('のこりじかん');
-                    console.log("Now のこりじかん is ", val);
+                    pendingVars.forEach(varName => {
+                        const val = this.getVariableValueByName(varName);
+                        console.log(`Now ${varName} is `, val);
 
-                    // 初期値(-1)以外に変更されたら表示して監視を終了
+                        // 初期値(-1)以外に変更されたら表示し、監視対象から外す
                     if (val !== null && val !== -1 && val !== '-1') {
-                        this.setVariableVisible('のこりじかん', true);
+                            this.setVariableVisible(varName, true);
+                            pendingVars.delete(varName);
+                        }
+                    });
+
+                    // すべての変数が変更・表示されたら監視終了
+                    if (pendingVars.size === 0) {
                         clearInterval(this._varCheckInterval);
                         this._varCheckInterval = null;
                     }
                 }, 100);
 
-                // 4. 掛け声演出とハットブロックの起動処理
+                // 3. 掛け声演出とハットブロックの起動処理
                 this.sayFromJudge('');
                 this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
 
