@@ -1735,6 +1735,8 @@
             this.setVariableVisible('のこりじかん', false);
             this.setVariableValueByName('ランダム', -1);
             this.setVariableVisible('ランダム', false);
+            this.setVariableValueByName('アルファベット', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
+            this.setVariableVisible('アルファベット', false);
         }
 
         testRun (args, util) {
