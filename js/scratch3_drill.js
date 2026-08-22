@@ -1709,16 +1709,17 @@
                 cat.setVisible(true);  
                 cat.setRotationStyle(Scratch.BlockType.ALL_AROUND);
                 cat.setCostume(0);
+                this.runtime.emit('SAY', cat, 'say', '');
             }
             if (playButton) {
-                playButton.setXY(-131, 146);
+                playButton.setXY(-130, 150);
                 playButton.setDirection(90);
                 playButton.setSize(100);
                 playButton.setVisible(true);  
                 playButton.setCostume(0);
             }
             if (judge) {
-                judge.setXY(181, -139);
+                judge.setXY(180, -140);
                 judge.setDirection(90);
                 judge.setSize(30);
                 judge.setVisible(true);  
