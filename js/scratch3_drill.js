@@ -240,6 +240,68 @@
             this.currentQuestionIndex = 0;
 
             // 問題リストの定義
+            this.questionObjects = [
+                {
+                    id: 1101,
+                    questions: [
+                        {
+                            title: '',
+                            validate: null
+                        },
+                    ]
+                },
+                {
+                    id: 1102,
+                    questions: [
+                        {
+                            title: 'ネコの むきを\n180ど（ました）に しよう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+                                
+                                if (first.opcode !== 'motion_pointindirection') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) === '180';
+                            }
+                        },
+                        {
+                            title: 'むきを0ど（うえ）に して、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_pointindirection') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) !== '0') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_pointindirection') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DIRECTION', allBlocks)) === '-90';
+                            }
+                        },
+                        {
+                            title: 'かいてんほうほうを さゆうのみに してから\nむきを-90ど（ひだり）に して、\n1びょう まってから\nむきを90ど（みぎ）に しよう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 4) return false;
+                                const [first, second, third, fourth] = userSequence;
+
+                                if (first.opcode !== 'motion_setrotationstyle') return false;
+                                const styleBlock = allBlocks[first.blockId];
+                                if (styleBlock?.fields?.STYLE?.value !== 'left-right') return false;
+
+                                if (second.opcode !== 'motion_pointindirection') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DIRECTION', allBlocks)) !== '-90') return false;
+
+                                if (third.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (fourth.opcode !== 'motion_pointindirection') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[fourth.blockId], 'DIRECTION', allBlocks)) === '90';
+                            }
+                        }
+                    ]
+                }
+            ]
             this.questions = [
                 {
                     id: 1,
@@ -1829,34 +1891,37 @@
         }
 
         isValidQuestionId (args) {
-            const startQuestionId = this.getVariableValueByName('スタートばんごう');
+            const startQuestionId = this.getVariableValueByName('せんたくばんごう');
             if (!this.questions || this.questions.length === 0) return false;
             const targetId = parseInt(startQuestionId, 10);
-            // questions の中に、同じ id を持つ問題があれば true を返す
-            return this.questions.some(q => q.id === targetId);
+            // questionObjects の中に、同じ id を持つ問題群があれば true を返す
+            return this.questionObjects.some(qObj => qObj.id === targetId);
         }
 
         startDrillWithId (args) {
-            const startQuestionId = this.getVariableValueByName('スタートばんごう');
-            if (!this.questions || this.questions.length === 0) return;
+            const startQuestionId = this.getVariableValueByName('せんたくばんごう');
+            if (!this.questionObjects || this.questionObjects.length === 0) return;
             const targetId = parseInt(startQuestionId, 10);
-            const targetIndex = this.questions.findIndex(q => q.id === targetId);
+            const targetIndex = this.questionObjects.findIndex(qObj => qObj.id === targetId);
             
             if (targetIndex !== -1) {
-                this.currentQuestionIndex = targetIndex;
+                // 指定idのオブジェクト
+                this.selectedQuestionObj = this.questionObjects[targetIndex];
             } else {
-                this.currentQuestionIndex = 0; 
+                // 最初のオブジェクト
+                this.selectedQuestionObj = this.questionObjects[0]; 
             }
+            this.currentQuestionIndex = 0;
             this.askCurrentQuestion();
         }
 
         askCurrentQuestion (args, util) {
-            if (this.currentQuestionIndex >= this.questions.length) {
+            if (this.currentQuestionIndex >= this.selectedQuestionObj.questions.length) {
                 this.sayFromJudge('ぜんもんせいかい！\nおめでとう！');
                 return;
             }
-            const q = this.questions[this.currentQuestionIndex];
-            this.sayFromJudge(`【だい ${q.id} もん】\n${q.title}`);
+            const q = this.selectedQuestionObj.questions[this.currentQuestionIndex];
+            this.sayFromJudge(`【だい ${this.currentQuestionIndex + 1} もん】\n${q.title}`);
         }
 
         sayFromJudge (text) {
@@ -1964,12 +2029,12 @@
                 return;
             }
 
-            if (this.currentQuestionIndex >= this.questions.length) {
+            if (this.currentQuestionIndex >= this.selectedQuestionObj.questions.length) {
                 this.runtime.emit('SAY', activeJudge, 'say', 'すべての もんだいを\nクリアしています');
                 return;
             }
 
-            const currentQuestion = this.questions[this.currentQuestionIndex];
+            const currentQuestion = this.selectedQuestionObj.questions[this.currentQuestionIndex];
             const blocks = cat.blocks._blocks;
 
             let hatBlockId = null;
