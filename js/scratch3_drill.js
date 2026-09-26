@@ -1890,6 +1890,13 @@
             }
         }
 
+        sayFromJudge (text) {
+            const { judge } = this.getTargets();
+            if (judge) {
+                this.runtime.emit('SAY', judge, 'say', text);
+            }
+        }
+        
         isValidQuestionId (args) {
             const startQuestionId = this.getVariableValueByName('せんたくばんごう');
             if (!this.questions || this.questions.length === 0) return false;
@@ -1899,9 +1906,9 @@
         }
 
         startDrillWithId (args) {
-            const startQuestionId = this.getVariableValueByName('せんたくばんごう');
+            const inputId = this.getVariableValueByName('せんたくばんごう');
             if (!this.questionObjects || this.questionObjects.length === 0) return;
-            const targetId = parseInt(startQuestionId, 10);
+            const targetId = parseInt(inputId, 10);
             const targetIndex = this.questionObjects.findIndex(qObj => qObj.id === targetId);
             
             if (targetIndex !== -1) {
@@ -1917,21 +1924,48 @@
 
         askCurrentQuestion (args, util) {
             if (this.currentQuestionIndex >= this.selectedQuestionObj.questions.length) {
-                this.sayFromJudge('ぜんもんせいかい！\nおめでとう！');
+                this.clear();
                 return;
             }
             const q = this.selectedQuestionObj.questions[this.currentQuestionIndex];
             this.sayFromJudge(`【だい ${this.currentQuestionIndex + 1} もん】\n${q.title}`);
         }
 
-        sayFromJudge (text) {
-            const { judge } = this.getTargets();
-            if (judge) {
-                this.runtime.emit('SAY', judge, 'say', text);
+        async clear () {
+            const stage = this.runtime.getTargetForStage();
+            if (!stage) return;
+
+            // 1. 背景を 'clear' に切り替える
+            const costumes = stage.getCostumes();
+            const clearIndex = costumes.findIndex(c => c.name === 'clear');
+            if (clearIndex !== -1) {
+                stage.setCostume(clearIndex);
+            }
+
+            this.sayFromJudge('ぜんもんせいかい！\nおめでとう！');
+
+            // 2. ステージにある音声を終わるまで再生
+            if (stage.sprite && stage.sprite.sounds) {
+                const cheerSound = stage.sprite.sounds.find(s => s.name === 'clear');
+                const soundBank = stage.sprite.soundBank;
+
+                if (cheerSound && soundBank) {
+                    // soundBank.playSound は再生終了まで待機する Promise を返します
+                    await soundBank.playSound(stage, cheerSound.soundId);
+                }
             }
         }
 
         initializeSprites () {
+            const stage = this.runtime.getTargetForStage();
+
+            // 1. 背景を 'grid' に切り替える
+            const costumes = stage.getCostumes();
+            const gridIndex = costumes.findIndex(c => c.name === 'grid');
+            if (gridIndex !== -1) {
+                stage.setCostume(gridIndex);
+            }
+
             const { cat, playButton, judge, post } = this.getTargets();
             if (cat) {
                 this.runtime.stopForTarget(cat);
