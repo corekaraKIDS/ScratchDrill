@@ -1865,8 +1865,14 @@
                 // 最初のオブジェクト
                 this.selectedQuestionObj = this.questionObjects[0]; 
             }
-            this.currentQuestionIndex = 0;
-            this.askCurrentQuestion();
+
+            this.sayFromJudge(`[${this.formatId(this.selectedQuestionObj.id)}] ${this.selectedQuestionObj.questions.length}もん\nドリル スタート！`);
+            // 3秒後にドリル開始
+            setTimeout(() => {
+                this.keepCatInBack();
+                this.currentQuestionIndex = 0;
+                this.askCurrentQuestion();
+            }, 3000);
         }
 
         askCurrentQuestion (args, util) {
@@ -1901,6 +1907,10 @@
                     await soundBank.playSound(stage, clearSound.soundId);
                 }
             }
+
+            // 3. 裏で走るタイマーを止める
+            this.stopCatBack();
+            this.stopVarCheck();
         }
 
         initializeSprites () {
@@ -1953,6 +1963,23 @@
             this.setVariableVisible('アルファベット', false);
         }
 
+        // ネコのスプライトを常に最背面に維持する
+        keepCatInBack () {
+            // 前回のタイマーが残っていればクリア
+            if (this._catBackInterval) {
+                clearInterval(this._catBackInterval);
+                this._catBackInterval = null;
+            }
+
+            // 100msごとにネコを最背面に移動
+            this._catBackInterval = setInterval(() => {
+                const { cat } = this.getTargets();
+                if (cat && typeof cat.goToBack === 'function') {
+                    cat.goToBack();
+                }
+            }, 100);
+        }
+
         testRun (args, util) {
             const { cat, playButton } = this.getTargets();
             const activePlayButton = playButton || util.target;
@@ -1985,8 +2012,7 @@
 
                     // すべての変数が変更・表示されたら監視終了
                     if (pendingVars.size === 0) {
-                        clearInterval(this._varCheckInterval);
-                        this._varCheckInterval = null;
+                        this.stopVarCheck();
                     }
                 }, 100);
 
@@ -2001,9 +2027,25 @@
             }
         }
 
+        stopVarCheck () {
+            if (this._varCheckInterval) {
+                clearInterval(this._varCheckInterval);
+                this._varCheckInterval = null;
+            }
+        }
+
+        stopCatBack () {
+            if (this._catBackInterval) {
+                clearInterval(this._catBackInterval);
+                this._catBackInterval = null;
+            }
+        }
+
         async checkAnswer (args, util) {
             const { cat, judge } = this.getTargets();
             const activeJudge = judge || util.target;
+
+            this.stopVarCheck();
             
             // activeJudge.sprite から sounds と soundBank を取得
             const sounds = activeJudge?.sprite?.sounds || [];
