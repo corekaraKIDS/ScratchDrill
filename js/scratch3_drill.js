@@ -245,8 +245,11 @@
                     id: 1101,
                     questions: [
                         {
-                            title: '',
-                            validate: null
+                            title: 'Scratchドリルに ようこそ！\nすきな プログラムを\n「ここから かきはじめる」の したに かいてみよう！\nかいたら\n「ためしにうごかす」で うごかしてみよう！\nさいごに「こたえあわせ」を おしてね！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length === 0) return false;
+                                return true;
+                            }
                         },
                     ]
                 },
@@ -1708,7 +1711,7 @@
         getInfo () {
             return {
                 id: 'drill',
-                name: '自動採点ドリル',
+                name: 'ドリル',
                 color1: '#000000',
                 color2: '#000000',
                 color3: '#000000',
