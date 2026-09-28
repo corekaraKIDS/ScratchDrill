@@ -560,6 +560,89 @@
                             }
                         },
                     ]
+                },
+                {
+                    id: 1108,
+                    questions: [
+                        {
+                            title: 'yざひょうを 20ふやす ことを\n5かい くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+
+                                return DrillValidators.checkRepeatChangeCoord(
+                                    allBlocks[first.blockId], allBlocks, 'y', 20, 5
+                                );
+                            }
+                        },
+                        {
+                            title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+
+                                if (first.opcode !== 'control_repeat') return false;
+                                const repeatBlock = allBlocks[first.blockId];
+
+                                if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
+
+                                const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                                if (innerBlocks.length !== 2) return false;
+
+                                // 順不同
+                                const waitBlock = innerBlocks.find(b => b.opcode === 'control_wait');
+                                const changeYBlock = innerBlocks.find(b => b.opcode === 'motion_changeyby');
+                                if (!waitBlock || !changeYBlock) return false;
+
+                                // 1秒
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // y座標 +20
+                                return String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) === '20';
+                            }
+                        },
+                        {
+                            title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえし、\nそのあとで yざひょうを 0にする',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                if (first.opcode !== 'control_repeat') return false;
+                                const repeatBlock = allBlocks[first.blockId];
+
+                                if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
+
+                                const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
+                                if (innerBlocks.length !== 2) return false;
+
+                                // 順不同
+                                const waitBlock = innerBlocks.find(b => b.opcode === 'control_wait');
+                                const changeYBlock = innerBlocks.find(b => b.opcode === 'motion_changeyby');
+                                if (!waitBlock || !changeYBlock) return false;
+
+                                // 1秒
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // y座標 20
+                                if (String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) !== '20') return false;
+
+                                // パターンA: 「yざひょうを 0 にする」
+                                if (second.opcode === 'motion_sety') {
+                                    const setyBlock = allBlocks[second.blockId];
+                                    return String(DrillValidators.getInputValue(setyBlock, 'Y', allBlocks)) === '0';
+                                }
+
+                                // パターンB: 「x: ◯ y: 0 にいく」 (y座標が0であれば正解)
+                                if (second.opcode === 'motion_gotoxy') {
+                                    const gotoBlock = allBlocks[second.blockId];
+                                    return String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '0';
+                                }
+
+                                // どちらでもなければ不正解
+                                return false;
+                            }
+                        },
+                    ]
                 }
             ]
             this.questions = [
@@ -643,87 +726,6 @@
 
                         if (second.opcode !== 'control_forever') return false;
                         return DrillValidators.checkForeverMoveAndBounce(second.blockId, allBlocks);
-                    }
-                },
-                {
-                    id: 26,
-                    title: 'yざひょうを 20ふやす ことを\n5かい くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-
-                        return DrillValidators.checkRepeatChangeCoord(
-                            allBlocks[first.blockId], allBlocks, 'y', 20, 5
-                        );
-                    }
-                },
-                {
-                    id: 27,
-                    title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-
-                        if (first.opcode !== 'control_repeat') return false;
-                        const repeatBlock = allBlocks[first.blockId];
-
-                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
-
-                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
-                        if (innerBlocks.length !== 2) return false;
-
-                        // 順不同
-                        const waitBlock = innerBlocks.find(b => b.opcode === 'control_wait');
-                        const changeYBlock = innerBlocks.find(b => b.opcode === 'motion_changeyby');
-                        if (!waitBlock || !changeYBlock) return false;
-
-                        // 1秒
-                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        // y座標 +20
-                        return String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) === '20';
-                    }
-                },
-                {
-                    id: 28,
-                    title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえし、\nそのあとで yざひょうを 0にする',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-                        const [first, second] = userSequence;
-
-                        if (first.opcode !== 'control_repeat') return false;
-                        const repeatBlock = allBlocks[first.blockId];
-
-                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '5') return false;
-
-                        const innerBlocks = DrillValidators.getInnerBlocks(repeatBlock, allBlocks);
-                        if (innerBlocks.length !== 2) return false;
-
-                        // 順不同
-                        const waitBlock = innerBlocks.find(b => b.opcode === 'control_wait');
-                        const changeYBlock = innerBlocks.find(b => b.opcode === 'motion_changeyby');
-                        if (!waitBlock || !changeYBlock) return false;
-
-                        // 1秒
-                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        // y座標 20
-                        if (String(DrillValidators.getInputValue(changeYBlock, 'DY', allBlocks)) !== '20') return false;
-
-                        // パターンA: 「yざひょうを 0 にする」
-                        if (second.opcode === 'motion_sety') {
-                            const setyBlock = allBlocks[second.blockId];
-                            return String(DrillValidators.getInputValue(setyBlock, 'Y', allBlocks)) === '0';
-                        }
-
-                        // パターンB: 「x: ◯ y: 0 にいく」 (y座標が0であれば正解)
-                        if (second.opcode === 'motion_gotoxy') {
-                            const gotoBlock = allBlocks[second.blockId];
-                            return String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '0';
-                        }
-
-                        // どちらでもなければ不正解
-                        return false;
                     }
                 },
                 {
