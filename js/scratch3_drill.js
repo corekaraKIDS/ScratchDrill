@@ -393,198 +393,173 @@
                             }
                         }
                     ]
+                },
+                {
+                    id: 1105,
+                    questions: [
+                        {
+                            title: 'ネコの xざひょうを 100 にしよう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+                                
+                                if (first.opcode !== 'motion_setx') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'X', allBlocks)) === '100';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いこう！\nぶひんは 1つだけで できるよ！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+                                
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const gotoBlock = allBlocks[first.blockId];
+                                return String(DrillValidators.getInputValue(gotoBlock, 'X', allBlocks)) === '120' &&
+                                    String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '60';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょう: -120\nyざひょう: -60\nのばしょに いこう！',
+                            validate: (userSequence, allBlocks) => {
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+                                
+                                if (third.opcode !== 'motion_gotoxy') return false;
+                                const thirdBlock = allBlocks[third.blockId];
+                                return String(DrillValidators.getInputValue(thirdBlock, 'X', allBlocks)) === '-120' &&
+                                    String(DrillValidators.getInputValue(thirdBlock, 'Y', allBlocks)) === '-60';
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: 1106,
+                    questions: [
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょうを 30 ふやそう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changexby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '30';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nyざひょうを 40 へらそう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changeyby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-40';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nひだりに 80 うごこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changexby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '-80';
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 1107,
+                    questions: [
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nみぎに 80 うごこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changexby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '80';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nうえに 40 うごこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changeyby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '40';
+                            }
+                        },
+                        {
+                            title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nしたに 100 うごこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                if (first.opcode !== 'motion_gotoxy') return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
+                                    String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_changeyby') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-100';
+                            }
+                        },
+                    ]
                 }
             ]
             this.questions = [
-                {
-                    id: 10,
-                    title: 'みぎに45ど まわして、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode == 'motion_turnright') {
-                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '45') return false;
-                        } else if (first.opcode == 'motion_turnleft') {
-                            if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DEGREES', allBlocks)) !== '-45') return false;
-                        }
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_pointindirection') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DIRECTION', allBlocks)) === '-90';
-                    }
-                },
-                {
-                    id: 11,
-                    title: 'ネコの xざひょうを 100 にしよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-                        
-                        if (first.opcode !== 'motion_setx') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'X', allBlocks)) === '100';
-                    }
-                },
-                {
-                    id: 12,
-                    title: 'ネコの yざひょうを 100 にしよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-                        
-                        if (first.opcode !== 'motion_sety') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'Y', allBlocks)) === '100';
-                    }
-                },
-                {
-                    id: 13,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いこう！\nぶひんは 1つだけで できるよ！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const [first] = userSequence;
-                        
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const gotoBlock = allBlocks[first.blockId];
-                        return String(DrillValidators.getInputValue(gotoBlock, 'X', allBlocks)) === '120' &&
-                            String(DrillValidators.getInputValue(gotoBlock, 'Y', allBlocks)) === '60';
-                    }
-                },
-                {
-                    id: 14,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょう: -120\nyざひょう: -60\nのばしょに いこう！',
-                    validate: (userSequence, allBlocks) => {
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-                        
-                        if (third.opcode !== 'motion_gotoxy') return false;
-                        const thirdBlock = allBlocks[third.blockId];
-                        return String(DrillValidators.getInputValue(thirdBlock, 'X', allBlocks)) === '-120' &&
-                            String(DrillValidators.getInputValue(thirdBlock, 'Y', allBlocks)) === '-60';
-                    }
-                },
-                {
-                    id: 15,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょうを 30 ふやそう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changexby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '30';
-                    }
-                },
-                {
-                    id: 16,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nyざひょうを 40 へらそう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changeyby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-40';
-                    }
-                },
-                {
-                    id: 17,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nみぎに 80 うごこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changexby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '80';
-                    }
-                },
-                {
-                    id: 18,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nひだりに 80 うごこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changexby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DX', allBlocks)) === '-80';
-                    }
-                },
-                {
-                    id: 19,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nうえに 40 うごこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changeyby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '40';
-                    }
-                },
-                {
-                    id: 20,
-                    title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nしたに 100 うごこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        if (first.opcode !== 'motion_gotoxy') return false;
-                        const firstBlock = allBlocks[first.blockId];
-                        if (String(DrillValidators.getInputValue(firstBlock, 'X', allBlocks)) !== '120' ||
-                            String(DrillValidators.getInputValue(firstBlock, 'Y', allBlocks)) !== '60') return false;
-
-                        if (second.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
-
-                        if (third.opcode !== 'motion_changeyby') return false;
-                        return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DY', allBlocks)) === '-100';
-                    }
-                },
                 {
                     id: 21,
                     title: 'ずっと 10ど まわしつづける',
