@@ -1828,6 +1828,18 @@
                 this.runtime.emit('SAY', judge, 'say', text);
             }
         }
+
+        // 教材IDのフォーマット（例：1201 -> A2-01）
+        formatId (code) {
+            if (!code) return code;
+            const codeAsStr = String(code);
+            if (codeAsStr.length !== 4) return codeAsStr;
+
+            const map = { '1': 'A', '2': 'B', '3': 'C' };
+            const firstChar = map[codeAsStr[0]] || codeAsStr[0];
+
+            return `${firstChar}${codeAsStr[1]}-${codeAsStr.slice(2)}`;
+        }
         
         isValidQuestionId (args) {
             const startQuestionId = this.getVariableValueByName('せんたくばんごう');
@@ -1874,7 +1886,7 @@
                 stage.setCostume(clearIndex);
             }
 
-            this.sayFromJudge('ぜんもんせいかい！\nおめでとう！');
+            this.sayFromJudge(`[${this.formatId(this.selectedQuestionObj.id)}] ${this.selectedQuestionObj.questions.length}もん\nぜんもんせいかい！\nおめでとう！`);
 
             // 2. ステージにある音声を終わるまで再生
             if (stage.sprite && stage.sprite.sounds) {
@@ -1891,7 +1903,7 @@
         initializeSprites () {
             const stage = this.runtime.getTargetForStage();
 
-            // 1. 背景を 'grid' に切り替える
+            // 背景を 'grid' に切り替える
             const costumes = stage.getCostumes();
             const gridIndex = costumes.findIndex(c => c.name === 'grid');
             if (gridIndex !== -1) {
@@ -1986,9 +1998,15 @@
             }
         }
 
-        checkAnswer (args, util) {
+        async checkAnswer (args, util) {
             const { cat, judge } = this.getTargets();
             const activeJudge = judge || util.target;
+            
+            // activeJudge.sprite から sounds と soundBank を取得
+            const sounds = activeJudge?.sprite?.sounds || [];
+            const correctSound = sounds.find(s => s.name === 'correct');
+            const wrongSound = sounds.find(s => s.name === 'wrong');
+            const soundBank = activeJudge?.sprite?.soundBank;
 
             if (!cat) {
                 this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが\nみつかりません');
@@ -2028,9 +2046,17 @@
 
             if (isCorrect) {
                 this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
+                activeJudge.setCostume(1);
+                if (correctSound && soundBank) {
+                    await soundBank.playSound(activeJudge, correctSound.soundId);
+                } 
                 this.currentQuestionIndex++;
             } else {
                 this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
+                activeJudge.setCostume(2);
+                if (wrongSound && soundBank) {
+                    await soundBank.playSound(activeJudge, wrongSound.soundId);
+                }
             }
                 
             setTimeout(() => {
