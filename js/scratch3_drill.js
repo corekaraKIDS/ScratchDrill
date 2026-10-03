@@ -900,96 +900,207 @@
                             }
                         }
                     ]
+                },
+                {
+                    id: 1201,
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、\nメッセージ「１かいてん」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+
+                                if (first.opcode !== 'event_broadcast') return false;
+                                return (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) === '１かいてん');
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const [first] = userSequence;
+
+                                if (first.opcode !== 'event_broadcast') return false;
+                                return (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) === 'かくだい');
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: 1202,
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、まず\nメッセージ「かくだい」を おくり、\n1びょうごに\nメッセージ「１かいてん」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                // 1個目: メッセージ「かくだい」を送る
+                                if (first.opcode !== 'event_broadcast') return false;
+                                if (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) !== 'かくだい') return false;
+
+                                // 2個目: 1秒待つ
+                                if (second.opcode !== 'control_wait') return false;
+                                const waitBlock = allBlocks[second.blockId];
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 3個目: メッセージ「１かいてん」を送る
+                                if (third.opcode !== 'event_broadcast') return false;
+                                return DrillValidators.getBroadcastMessage(allBlocks[third.blockId], allBlocks) === '１かいてん';
+                            }
+                        },
+                        {
+                            id_old: 35,
+                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\n1びょうごに\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+
+                                // 1個目: メッセージ「１かいてん」を送る
+                                if (first.opcode !== 'event_broadcast') return false;
+                                if (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) !== '１かいてん') return false;
+
+                                // 2個目: 1秒待つ
+                                if (second.opcode !== 'control_wait') return false;
+                                const waitBlock = allBlocks[second.blockId];
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 3個目: メッセージ「かくだい」を送る
+                                if (third.opcode !== 'event_broadcast') return false;
+                                return DrillValidators.getBroadcastMessage(allBlocks[third.blockId], allBlocks) === 'かくだい';
+                            }
+                        },
+                        {
+                            id_old: 31,
+                            title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                // 1個目: x座標を -2 変えるのを 50回繰り返す
+                                if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                                // 2個目: メッセージ「かくだい」を送る
+                                if (second.opcode !== 'event_broadcast') return false;
+                                return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === 'かくだい';
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: 1203,
+                    questions: [
+                        {
+                            id_old: 32,
+                            title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                // 1個目: x座標を -2 変えるのを 50回繰り返す
+                                if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+
+                                // 2個目: メッセージ「１かいてん」を送る
+                                if (second.opcode !== 'event_broadcast') return false;
+                                return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === '１かいてん';
+                            }
+                        },
+                        {
+                            id_old: 33,
+                            title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくり、\nこんどは xざひょうを 2ふやす ことを\n50かい くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+        
+                                // 1個目: x座標を -2 変えるのを 50回繰り返す
+                                if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+        
+                                // 2個目: メッセージ「１かいてん」を送る
+                                if (second.opcode !== 'event_broadcast') return false;
+                                if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
+        
+                                // 3個目: x座標を 2 変えるのを 50回繰り返す
+                                return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
+                            }
+                        },
+                        {
+                            id_old: 34,
+                            title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくって おわるまで まち、\nxざひょうを 2ふやす ことを\n50かい くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+                                const [first, second, third] = userSequence;
+        
+                                // 1個目: x座標を -2 変えるのを 50回繰り返す
+                                if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+        
+                                // 2個目: メッセージ「１かいてん」を送って待つ
+                                if (second.opcode !== 'event_broadcastandwait') return false;
+                                if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
+        
+                                // 3個目: x座標を 2 変えるのを 50回繰り返す
+                                return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 1204,
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、まず\nメッセージ「かくだい」を おくり、\nすぐ あとに\nメッセージ「１かいてん」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                const firstBlock = allBlocks[first.blockId];
+                                if (firstBlock?.opcode !== 'event_broadcast') return false;
+                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== 'かくだい') return false;
+
+                                const secondBlock = allBlocks[second.blockId];
+                                if (secondBlock?.opcode !== 'event_broadcast') return false;
+                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === '１かいてん';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\nすぐ あとに\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                const firstBlock = allBlocks[first.blockId];
+                                if (firstBlock?.opcode !== 'event_broadcast') return false;
+                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== '１かいてん') return false;
+
+                                const secondBlock = allBlocks[second.blockId];
+                                if (secondBlock?.opcode !== 'event_broadcast') return false;
+                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === 'かくだい';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\nおわるまで まってから\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                const firstBlock = allBlocks[first.blockId];
+                                if (firstBlock?.opcode !== 'event_broadcastandwait') return false;
+                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== '１かいてん') return false;
+
+                                const secondBlock = allBlocks[second.blockId];
+                                if (secondBlock?.opcode !== 'event_broadcast') return false;
+                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === 'かくだい';
+                            }
+                        }
+                    ]
                 }
             ]
             this.questions = [
-                {
-                    id: 31,
-                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「かくだい」を おくる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-                        const [first, second] = userSequence;
-
-                        // 1個目: x座標を -2 変えるのを 50回繰り返す
-                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
-
-                        // 2個目: メッセージ「かくだい」を送る
-                        if (second.opcode !== 'event_broadcast') return false;
-                        return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === 'かくだい';
-                    }
-                },
-                {
-                    id: 32,
-                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-                        const [first, second] = userSequence;
-
-                        // 1個目: x座標を -2 変えるのを 50回繰り返す
-                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
-
-                        // 2個目: メッセージ「１かいてん」を送る
-                        if (second.opcode !== 'event_broadcast') return false;
-                        return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === '１かいてん';
-                    }
-                },
-                {
-                    id: 33,
-                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくり、\nこんどは xざひょうを 2ふやす ことを\n50かい くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        // 1個目: x座標を -2 変えるのを 50回繰り返す
-                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
-
-                        // 2個目: メッセージ「１かいてん」を送る
-                        if (second.opcode !== 'event_broadcast') return false;
-                        if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
-
-                        // 3個目: x座標を 2 変えるのを 50回繰り返す
-                        return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
-                    }
-                },
-                {
-                    id: 34,
-                    title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「１かいてん」を おくって おわるまで まち、\nxざひょうを 2ふやす ことを\n50かい くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        // 1個目: x座標を -2 変えるのを 50回繰り返す
-                        if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
-
-                        // 2個目: メッセージ「１かいてん」を送って待つ
-                        if (second.opcode !== 'event_broadcastandwait') return false;
-                        if (DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) !== '１かいてん') return false;
-
-                        // 3個目: x座標を 2 変えるのを 50回繰り返す
-                        return DrillValidators.checkRepeatChangeCoord(allBlocks[third.blockId], allBlocks, 'x', 2, 50);
-                    }
-                },
-                {
-                    id: 35,
-                    title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\n1びょうごに\nメッセージ「かくだい」を おくる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-                        const [first, second, third] = userSequence;
-
-                        // 1個目: メッセージ「１かいてん」を送る
-                        if (first.opcode !== 'event_broadcast') return false;
-                        if (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) !== '１かいてん') return false;
-
-                        // 2個目: 1秒待つ
-                        if (second.opcode !== 'control_wait') return false;
-                        const waitBlock = allBlocks[second.blockId];
-                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        // 3個目: メッセージ「かくだい」を送る
-                        if (third.opcode !== 'event_broadcast') return false;
-                        return DrillValidators.getBroadcastMessage(allBlocks[third.blockId], allBlocks) === 'かくだい';
-                    }
-                },
                 {
                     id: 36,
                     title: '「ずっと」をつかって、\nうわむきやじるしキーを おしたとき\nyざひょうを 5ふやす',
