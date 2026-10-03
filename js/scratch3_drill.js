@@ -1098,132 +1098,272 @@
                             }
                         }
                     ]
+                },
+                {
+                    id: 1205,
+                    questions: [
+                        {
+                            id_old: 36,
+                            title: '「ずっと」をつかって、\nうわむきやじるしキーを おしたとき\nyざひょうを 5ふやす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                                if (inner.length !== 1) return false;
+
+                                return DrillValidators.checkIfKeyPressedMove(inner[0], allBlocks, 'up arrow', 'y', 5);
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: '「ずっと」をつかって、\nうわむきやじるしキーを おしたとき\nyざひょうを 5ふやし、\nしたむきやじるしキーを おしたとき\nyざひょうを 5へらす。',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                                if (innerBlocks.length !== 2) return false;
+
+                                const targets = [
+                                    { key: 'up arrow', axis: 'y', delta: 5 },
+                                    { key: 'down arrow', axis: 'y', delta: -5 }
+                                ];
+
+                                return targets.every(t => innerBlocks.some(b => DrillValidators.checkIfKeyPressedMove(b, allBlocks, t.key, t.axis, t.delta)));
+                            }
+                        },
+                        {
+                            id_old: 37,
+                            title: '「ずっと」をつかって、\n上下左右（じょうげさゆう）やじるしで 上下左右に うごかす。\nすうじは 5 か -5 をつかう',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                                if (innerBlocks.length !== 4) return false;
+
+                                const targets = [
+                                    { key: 'right arrow', axis: 'x', delta: 5 },
+                                    { key: 'left arrow', axis: 'x', delta: -5 },
+                                    { key: 'up arrow', axis: 'y', delta: 5 },
+                                    { key: 'down arrow', axis: 'y', delta: -5 }
+                                ];
+
+                                return targets.every(t => innerBlocks.some(b => DrillValidators.checkIfKeyPressedMove(b, allBlocks, t.key, t.axis, t.delta)));
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 1206,
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いく',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                // 1秒まつ & どこかのばしょへいく
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!waitBlock || !gotoBlock) return false;
+
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                return toMenu?.fields?.TO?.value === '_random_';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nマウスの ポインターに ふれたら\nつくった スクリプトを とめる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 1. 1秒まつ
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 2. どこかのばしょへいく
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!gotoBlock) return false;
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
+
+                                // 3. もし マウスのポインターにふれたら
+                                const ifBlock = inner.find(b => b.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+
+                                const touchMenu = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                                const targetName = touchMenu?.fields?.TOUCHINGOBJECTMENU?.value;
+                                if (targetName !== '_mouse_') return false;
+
+                                // 「もし」の内側: つくったスクリプト（または すべて）をとめる
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1) return false;
+
+                                const stopBlock = ifInner[0];
+                                if (stopBlock?.opcode !== 'control_stop') return false;
+
+                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
+                                return stopType === 'this script' || stopType === 'all';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nyざひょうが 100よりも おおきかったら\nつくった スクリプトを とめる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 1. 1秒まつ
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 2. どこかのばしょへいく
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!gotoBlock) return false;
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
+
+                                // 3. もし yざひょう > 100 なら
+                                const ifBlock = inner.find(b => b.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_yposition', 'gt', 100)) return false;
+
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1) return false;
+
+                                const stopBlock = ifInner[0];
+                                if (stopBlock?.opcode !== 'control_stop') return false;
+
+                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
+                                return stopType === 'this script' || stopType === 'all';
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: 1207,
+                    questions: [
+                        {
+                            id_old: 38,
+                            title: '「ずっと」をつかって、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                                if (inner.length !== 1) return false;
+
+                                return DrillValidators.checkIfElseKeyPressedChangeSize(inner[0], allBlocks, 'space');
+                            }
+                        },
+                        {
+                            id_old: 40,
+                            title: '「ずっと」をつかって、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる。\nスペースキーを おしながら みぎむきやじるしキーも おしたら\nメッセージ「かくだい」を おくる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 1) return false;
+
+                                const ifElseBlock = inner[0];
+                                if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                                // 1. 条件式（スペースキーがおされた）
+                                const spaceCondId = ifElseBlock.inputs.CONDITION?.block;
+                                const spaceCondBlock = allBlocks[spaceCondId];
+                                if (!spaceCondBlock || spaceCondBlock.opcode !== 'sensing_keypressed' || !spaceCondBlock.inputs) return false;
+
+                                if (DrillValidators.getInputValue(spaceCondBlock, 'KEY_OPTION', allBlocks) !== 'space') return false;
+
+                                // 2. でなければ（SUBSTACK2）: おおきさを -1 ずつかえる 1個
+                                const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                                if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_changesizeby') return false;
+                                if (String(DrillValidators.getInputValue(elseBlocks[0], 'CHANGE', allBlocks)) !== '-1') return false;
+
+                                // 3. もし（SUBSTACK）: おおきさを 1 ずつかえる ＋ もし右向き矢印キーなら の計2個
+                                const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                                if (thenBlocks.length !== 2) return false;
+
+                                // 3-1. おおきさを 1 ずつかえる
+                                const changeSizeBlock = thenBlocks.find(b => b.opcode === 'looks_changesizeby');
+                                if (!changeSizeBlock) return false;
+                                if (String(DrillValidators.getInputValue(changeSizeBlock, 'CHANGE', allBlocks)) !== '1') return false;
+
+                                // 3-2. 右向き矢印キーの「もし」ブロック
+                                const rightIfBlock = thenBlocks.find(b => b.opcode === 'control_if');
+                                if (!rightIfBlock || !rightIfBlock.inputs) return false;
+
+                                // 4. 内側の「もし右向き矢印キーがおされたなら」の判定
+                                const rightCondId = rightIfBlock.inputs.CONDITION?.block;
+                                const rightCondBlock = allBlocks[rightCondId];
+                                if (!rightCondBlock || rightCondBlock.opcode !== 'sensing_keypressed' || !rightCondBlock.inputs) return false;
+
+                                if (DrillValidators.getInputValue(rightCondBlock, 'KEY_OPTION', allBlocks) !== 'right arrow') return false;
+
+                                // 5. 内側の「メッセージ『かくだい』をおくる」の判定
+                                const rightInner = DrillValidators.getInnerBlocks(rightIfBlock, allBlocks, 'SUBSTACK');
+                                if (rightInner.length !== 1) return false;
+
+                                const broadcastBlock = rightInner[0];
+                                if (broadcastBlock?.opcode !== 'event_broadcast') return false;
+
+                                return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === 'かくだい';
+                            }
+                        },
+                        {
+                            id_old: 39,
+                            title: '「ずっと」をつかって、\n15ど まわしながら、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
+                                if (inner.length !== 2) return false;
+
+                                // 順不同
+                                const hasTurn = inner.some(b => DrillValidators.checkTurn(b, allBlocks, 15));
+                                const hasChangeSize = inner.some(b => DrillValidators.checkIfElseKeyPressedChangeSize(b, allBlocks, 'space'));
+
+                                return hasTurn && hasChangeSize;
+                            }
+                        },
+                    ]
                 }
             ]
             this.questions = [
-                {
-                    id: 36,
-                    title: '「ずっと」をつかって、\nうわむきやじるしキーを おしたとき\nyざひょうを 5ふやす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
-                        if (inner.length !== 1) return false;
-
-                        return DrillValidators.checkIfKeyPressedMove(inner[0], allBlocks, 'up arrow', 'y', 5);
-                    }
-                },
-                {
-                    id: 37,
-                    title: '「ずっと」をつかって、\n上下左右（じょうげさゆう）やじるしで 上下左右に うごかす。\nすうじは 5 か -5 をつかう',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const innerBlocks = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
-                        if (innerBlocks.length !== 4) return false;
-
-                        const targets = [
-                            { key: 'right arrow', axis: 'x', delta: 5 },
-                            { key: 'left arrow', axis: 'x', delta: -5 },
-                            { key: 'up arrow', axis: 'y', delta: 5 },
-                            { key: 'down arrow', axis: 'y', delta: -5 }
-                        ];
-
-                        return targets.every(t => innerBlocks.some(b => DrillValidators.checkIfKeyPressedMove(b, allBlocks, t.key, t.axis, t.delta)));
-                    }
-                },
-                {
-                    id: 38,
-                    title: '「ずっと」をつかって、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
-                        if (inner.length !== 1) return false;
-
-                        return DrillValidators.checkIfElseKeyPressedChangeSize(inner[0], allBlocks, 'space');
-                    }
-                },
-                {
-                    id: 39,
-                    title: '「ずっと」をつかって、\n15ど まわしながら、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks);
-                        if (inner.length !== 2) return false;
-
-                        // 順不同
-                        const hasTurn = inner.some(b => DrillValidators.checkTurn(b, allBlocks, 15));
-                        const hasChangeSize = inner.some(b => DrillValidators.checkIfElseKeyPressedChangeSize(b, allBlocks, 'space'));
-
-                        return hasTurn && hasChangeSize;
-                    }
-                },
-                {
-                    id: 40,
-                    title: '「ずっと」をつかって、\nスペースキーをおしたら おおきさが 1ずつ ふえて\nおさなかったら おおきさが 1ずつ へる。\nスペースキーを おしながら みぎむきやじるしキーも おしたら\nメッセージ「かくだい」を おくる',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 1) return false;
-
-                        const ifElseBlock = inner[0];
-                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
-
-                        // 1. 条件式（スペースキーがおされた）
-                        const spaceCondId = ifElseBlock.inputs.CONDITION?.block;
-                        const spaceCondBlock = allBlocks[spaceCondId];
-                        if (!spaceCondBlock || spaceCondBlock.opcode !== 'sensing_keypressed' || !spaceCondBlock.inputs) return false;
-
-                        if (DrillValidators.getInputValue(spaceCondBlock, 'KEY_OPTION', allBlocks) !== 'space') return false;
-
-                        // 2. でなければ（SUBSTACK2）: おおきさを -1 ずつかえる 1個
-                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
-                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_changesizeby') return false;
-                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'CHANGE', allBlocks)) !== '-1') return false;
-
-                        // 3. もし（SUBSTACK）: おおきさを 1 ずつかえる ＋ もし右向き矢印キーなら の計2個
-                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
-                        if (thenBlocks.length !== 2) return false;
-
-                        // 3-1. おおきさを 1 ずつかえる
-                        const changeSizeBlock = thenBlocks.find(b => b.opcode === 'looks_changesizeby');
-                        if (!changeSizeBlock) return false;
-                        if (String(DrillValidators.getInputValue(changeSizeBlock, 'CHANGE', allBlocks)) !== '1') return false;
-
-                        // 3-2. 右向き矢印キーの「もし」ブロック
-                        const rightIfBlock = thenBlocks.find(b => b.opcode === 'control_if');
-                        if (!rightIfBlock || !rightIfBlock.inputs) return false;
-
-                        // 4. 内側の「もし右向き矢印キーがおされたなら」の判定
-                        const rightCondId = rightIfBlock.inputs.CONDITION?.block;
-                        const rightCondBlock = allBlocks[rightCondId];
-                        if (!rightCondBlock || rightCondBlock.opcode !== 'sensing_keypressed' || !rightCondBlock.inputs) return false;
-
-                        if (DrillValidators.getInputValue(rightCondBlock, 'KEY_OPTION', allBlocks) !== 'right arrow') return false;
-
-                        // 5. 内側の「メッセージ『かくだい』をおくる」の判定
-                        const rightInner = DrillValidators.getInnerBlocks(rightIfBlock, allBlocks, 'SUBSTACK');
-                        if (rightInner.length !== 1) return false;
-
-                        const broadcastBlock = rightInner[0];
-                        if (broadcastBlock?.opcode !== 'event_broadcast') return false;
-
-                        return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === 'かくだい';
-                    }
-                },
                 {
                     id: 41,
                     title: 'まず どこかのばしょへ いって、\nxざひょうが 100よりも おおきかったら\nおおきさを 50%にして、\nでなければ おおきさを 100%にする。\n※なんども ためしに うごかしてみよう！',
