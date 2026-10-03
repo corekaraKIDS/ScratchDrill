@@ -50,13 +50,14 @@ try {
 }
 
 // 4. CSV行の構築
-const csvRows = ['id,question_index,title'];
+const csvRows = ['id,q_index,title,id_old'];
 
 questionObjects.forEach(qObj => {
     const id = qObj.id;
     if (Array.isArray(qObj.questions)) {
         qObj.questions.forEach((q, idx) => {
             let title = q.title || '';
+            const id_old = q.id_old || -1;
             
             // 改行（\n および実際の改行）を半角スペースに置換
             title = title.replace(/\\n/g, ' ').replace(/\n/g, ' ');
@@ -64,7 +65,7 @@ questionObjects.forEach(qObj => {
             // CSVダブルクォーテーションのエスケープ処理
             const escapedTitle = title.replace(/"/g, '""');
             
-            csvRows.push(`${id},${idx + 1},"${escapedTitle}"`);
+            csvRows.push(`${id},${idx + 1},"${escapedTitle}",${id_old}`);
         });
     }
 });

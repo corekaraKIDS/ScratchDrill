@@ -245,6 +245,7 @@
                     id: 1101,
                     questions: [
                         {
+                            id_old: -1,
                             title: 'Scratchドリルに ようこそ！\nすきな プログラムを\n「ここから かきはじめる」の したに かいてみよう！\nかいたら\n「ためしにうごかす」で うごかしてみよう！\nさいごに「こたえあわせ」を おしてね！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length === 0) return false;
@@ -257,6 +258,7 @@
                     id: 1102,
                     questions: [
                         {
+                            id_old: -1,
                             title: 'ネコの むきを\n180ど（した）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -267,6 +269,7 @@
                             }
                         },
                         {
+                            id_old: -1,
                             title: 'むきを0ど（うえ）に して、\n1びょう まってから\nむきを90ど（みぎ）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -288,6 +291,7 @@
                     id: 1103,
                     questions: [
                         {
+                            id_old: -1,
                             title: 'ネコの むきを\n0ど（うえ）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -298,6 +302,7 @@
                             }
                         },
                         {
+                            id_old: -1,
                             title: 'むきを0ど（うえ）に して、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -314,6 +319,7 @@
                             }
                         },
                         {
+                            id_old: -1,
                             title: 'かいてんほうほうを さゆうのみに してから\nむきを-90ど（ひだり）に して、\n1びょう まってから\nむきを90ど（みぎ）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 4) return false;
@@ -339,6 +345,7 @@
                     id: 1104,
                     questions: [
                         {
+                            id_old: -1,
                             title: 'ネコを みぎに15ど まわそう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -353,6 +360,7 @@
                             }
                         },
                         {
+                            id_old: 9,
                             title: 'みぎに90ど まわして、\n1びょう まってから\nひだりに90ど まわそう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -377,6 +385,7 @@
                             }
                         },
                         {
+                            id_old: -1,
                             title: 'みぎに45ど まわして、\n1びょう まってから\nむきを0ど（うえ）に しよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -401,6 +410,7 @@
                     id: 1105,
                     questions: [
                         {
+                            id_old: 11,
                             title: 'ネコの xざひょうを 100 にしよう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -411,6 +421,7 @@
                             }
                         },
                         {
+                            id_old: 13,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いこう！\nぶひんは 1つだけで できるよ！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -423,6 +434,7 @@
                             }
                         },
                         {
+                            id_old: 14,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょう: -120\nyざひょう: -60\nのばしょに いこう！',
                             validate: (userSequence, allBlocks) => {
                                 const [first, second, third] = userSequence;
@@ -447,6 +459,7 @@
                     id: 1106,
                     questions: [
                         {
+                            id_old: 15,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nxざひょうを 30 ふやそう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -465,6 +478,7 @@
                             }
                         },
                         {
+                            id_old: 16,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nyざひょうを 40 へらそう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -483,6 +497,7 @@
                             }
                         },
                         {
+                            id_old: 17,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nひだりに 80 うごこう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -506,6 +521,7 @@
                     id: 1107,
                     questions: [
                         {
+                            id_old: 18,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nみぎに 80 うごこう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -524,6 +540,7 @@
                             }
                         },
                         {
+                            id_old: 19,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nうえに 40 うごこう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -542,6 +559,7 @@
                             }
                         },
                         {
+                            id_old: 20,
                             title: 'xざひょう: 120\nyざひょう: 60\nのばしょに いってから、\n1びょうごに\nしたに 100 うごこう！',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 3) return false;
@@ -565,6 +583,7 @@
                     id: 1108,
                     questions: [
                         {
+                            id_old: 26,
                             title: 'yざひょうを 20ふやす ことを\n5かい くりかえす',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -576,6 +595,7 @@
                             }
                         },
                         {
+                            id_old: 27,
                             title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえす',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 1) return false;
@@ -602,6 +622,7 @@
                             }
                         },
                         {
+                            id_old: 28,
                             title: '1びょう ごとに\nyざひょうを 20ふやす ことを\n5かい くりかえし、\nそのあとで yざひょうを 0にする',
                             validate: (userSequence, allBlocks) => {
                                 if (userSequence.length !== 2) return false;
