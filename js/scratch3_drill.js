@@ -2200,7 +2200,7 @@
                     {
                         opcode: 'testRun',
                         blockType: Scratch.BlockType.COMMAND,
-                        text: 'テストランする'
+                        text: 'テストラン'
                     },
                     {
                         opcode: 'isValidQuestionId',
@@ -2453,21 +2453,35 @@
         }
 
         testRun (args, util) {
+            const { playButton } = this.getTargets();
+            if (!playButton) {
+                console.log('テストランボタンが見つかりません');
+                return;
+            }
+
+            // 最初のコスチューム（0）ならテスト実行、それ以外なら停止
+            if (playButton.currentCostume === 0) {
+                this.doTestRun(args, util);
+            } else {
+                this.stopTestRun(args, util);
+            }
+        }
+
+        doTestRun (args, util) {
             const { cat, playButton } = this.getTargets();
-            const activePlayButton = playButton || util.target;
-            
+
             if (cat) {
                 // 1. スプライトと変数を初期化
                 this.initializeSprites();
 
                 // 2.1. 監視したい変数名を配列で指定
-                const targetVars = ['のこりじかん', 'ランダム']; // 必要に応じて追加・変更
+                const targetVars = ['のこりじかん', 'ランダム'];
                 const pendingVars = new Set(targetVars);
 
                 // 2.2. 前回の変数監視タイマーが残っていればクリア
                 this.stopVarCheck();
 
-                // 2.3. 100msごとに変数を監視（VMのステップ状態に依存しない）
+                // 2.3. 100msごとに変数を監視
                 this._varCheckInterval = setInterval(() => {
                     pendingVars.forEach(varName => {
                         const val = this.getVariableValueByName(varName);
@@ -2488,13 +2502,36 @@
 
                 // 3. 掛け声演出とハットブロックの起動処理
                 this.sayFromJudge('');
-                this.runtime.emit('SAY', activePlayButton, 'say', 'いくよ！せーの');
+                this.runtime.emit('SAY', playButton, 'say', 'いくよ！せーの');
 
-                setTimeout(() => {
-                    this.runtime.emit('SAY', activePlayButton, 'say', '');
+                if (this._testRunTimeout) clearTimeout(this._testRunTimeout);
+                this._testRunTimeout = setTimeout(() => {
+                    this.runtime.emit('SAY', playButton, 'say', '');
+                    playButton.setCostume(1);
                     this.runtime.startHats('drill_codeStart', null, cat);
                 }, 1500);
             }
+        }
+
+        stopTestRun (args, util) {
+            const { playButton } = this.getTargets();
+
+            // コスチュームを 0（再生アイコン）へ戻す
+            if (playButton) {
+                playButton.setCostume(0);
+                this.runtime.emit('SAY', playButton, 'say', '');
+            }
+            // 「せーの」のタイマー停止
+            if (this._testRunTimeout) {
+                clearTimeout(this._testRunTimeout);
+                this._testRunTimeout = null;
+            }
+
+            this.stopVarCheck();
+            this.initializeSprites();
+
+            // 問題文の再掲
+            this.askCurrentQuestion();
         }
 
         stopVarCheck () {
