@@ -1498,6 +1498,448 @@
                             }
                         },
                     ]
+                },
+                {
+                    id: 2101,
+                    questions: [
+                        {
+                            id_old: 46,
+                            title: 'まず へんすう「のこりじかん」を 15にして、\n1びょう ごとに 1へらす ことを\n15かい くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+
+                                // 1. 「のこりじかん」を 15 にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 15)) return false;
+
+                                // 2. 15回くりかえす
+                                const repeatBlock = allBlocks[userSequence[1].blockId];
+                                if (repeatBlock?.opcode !== 'control_repeat') return false;
+                                if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '15') return false;
+
+                                // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
+                                const inner = DrillValidators.getInnerBlocks(repeatBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
+                            }
+                        },
+                        {
+                            id_old: 47,
+                            title: 'まず へんすう「のこりじかん」を 10にして、\n1びょう ごとに 1へらす ことを\n15かい くりかえす。\n※へんすうが マイナスに なっちゃうかも！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+
+                                // 1. 「のこりじかん」を 10 にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
+
+                                // 2. 15回くりかえす
+                                const repeatBlock = allBlocks[userSequence[1].blockId];
+                                if (repeatBlock?.opcode !== 'control_repeat') return false;
+                                if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '15') return false;
+
+                                // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
+                                const inner = DrillValidators.getInnerBlocks(repeatBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
+                            }
+                        },
+                        {
+                            id_old: 48,
+                            title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえす',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+
+                                // 1. 「のこりじかん」を 10 にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
+
+                                // 2. 「のこりじかん」= 0 になるまでくりかえす
+                                const repeatUntilBlock = allBlocks[userSequence[1].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 2102,
+                    questions: [
+                        {
+                            id: 49,
+                            title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえし、\n0に なったら\nメッセージ「１かいてん」を おくる。\n※「もし」は つかわずに できるよ！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+
+                                // 1. 「のこりじかん」を 10 にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
+
+                                // 2. 「のこりじかん」= 0 になるまでくりかえす
+                                const repeatUntilBlock = allBlocks[userSequence[1].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                if (!DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1)) return false;
+
+                                // 3. ループ終了直後に メッセージ「１かいてん」を送る
+                                const broadcastBlock = allBlocks[userSequence[2].blockId];
+                                if (broadcastBlock?.opcode !== 'event_broadcast') return false;
+
+                                return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === '１かいてん';
+                            }
+                        },
+                        {
+                            id: 50,
+                            title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえす。\n3に なったときに\nメッセージ「かくだい」を おくり、\n0に なったら\nメッセージ「１かいてん」を おくる。\n※「もし」は 1つだけ つかうよ！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 3) return false;
+
+                                // 1. 「のこりじかん」を 10 にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
+
+                                // 2. 「のこりじかん」= 0 になるまでくりかえす
+                                const repeatUntilBlock = allBlocks[userSequence[1].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                // 中身: 「1秒まつ」「-1減らす」「もし『のこりじかん』= 3 なら メッセージ『かくだい』を送る」の 3ブロック
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                if (!DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1)) return false;
+
+                                // もし「のこりじかん」= 3 なら
+                                const ifBlock = inner.find(b => b.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                const ifCondBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(ifCondBlock, allBlocks, 'data_variable', 'eq', 3)) return false;
+
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1 || ifInner[0]?.opcode !== 'event_broadcast') return false;
+                                if (DrillValidators.getBroadcastMessage(ifInner[0], allBlocks) !== 'かくだい') return false;
+
+                                // 3. ループ終了直後に メッセージ「１かいてん」を送る
+                                const broadcastBlock = allBlocks[userSequence[2].blockId];
+                                if (broadcastBlock?.opcode !== 'event_broadcast') return false;
+
+                                return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === '１かいてん';
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 2103,
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: '未定'
+                        }
+                    ]
+                },
+                {
+                    id: 2104,
+                    questions: [
+                        {
+                            id_old: 51,
+                            title: 'へんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※なんども ためしに うごかしてみよう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+
+                                // 1. 変数「ランダム」を 0から1の乱数にする
+                                const setVarBlock = allBlocks[userSequence[0].blockId];
+                                if (!DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', 0, 1)) return false;
+
+                                // 2. もし〜でなければ
+                                const ifElseBlock = allBlocks[userSequence[1].blockId];
+                                if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                                // 2-1. 条件式（「ランダム」= 0）
+                                const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                // 2-2. もし: かくす 1個
+                                const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                                if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
+
+                                // 2-3. でなければ: ひょうじする 1個
+                                const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                                if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
+
+                                return true;
+                            }
+                        },
+                        {
+                            id_old: 52,
+                            title: 'ずっと 1びょうごとに\nへんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※「1びょうまつ」は さいごに かこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+                                const [randBlock, ifElseBlock, waitBlock] = inner;
+
+                                if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 1)) return false;
+
+                                if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
+
+                                const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                                if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
+
+                                const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                                if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
+
+                                if (waitBlock?.opcode !== 'control_wait') return false;
+                                return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
+                            }
+                        },
+                        {
+                            id_old: 53,
+                            title: 'ずっと xざひょうを 2 ふやしながら、\nへんすう「ランダム」を\n-10から10までの らんすうに して、\nyざひょうを「ランダム」のかずに する',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[userSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 1. xざひょうを 2 ふやす
+                                const changeXBlock = inner.find(b => b.opcode === 'motion_changexby');
+                                if (!changeXBlock) return false;
+                                if (String(DrillValidators.getInputValue(changeXBlock, 'DX', allBlocks)) !== '2') return false;
+
+                                // 2. 変数「ランダム」を -10から10までの乱数にする
+                                const setVarBlock = inner.find(b => b.opcode === 'data_setvariableto');
+                                if (!setVarBlock || !DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', -10, 10)) return false;
+
+                                // 3. yざひょうを「ランダム」のかずにする
+                                const setYBlock = inner.find(b => b.opcode === 'motion_sety');
+                                if (!setYBlock || !setYBlock.inputs) return false;
+
+                                const yValBlock = allBlocks[setYBlock.inputs.Y?.block];
+                                if (yValBlock?.opcode !== 'data_variable' || !yValBlock.fields) return false;
+                                const varField = yValBlock.fields.VARIABLE;
+                                if (!varField || (varField.value !== 'ランダム' && varField.id !== 'ランダム')) return false;
+
+                                return true;
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 2105,
+                    questions: [
+                        {
+                            id_old: 54,
+                            title: '1びょうごとに\nへんすう「ランダム」を\n0から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n※「1びょうまつ」は さいごに かこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const repeatUntilBlock = allBlocks[userSequence[0].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                // 端に触れたか判定
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+                                const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                                if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+                                const [randBlock, changeXBlock, waitBlock] = inner;
+
+                                // 1. 変数「ランダム」を 0から30の乱数にする
+                                if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 30)) return false;
+
+                                // 2. xざひょうを「ランダム」ずつ変える
+                                if (changeXBlock?.opcode !== 'motion_changexby' || !changeXBlock.inputs) return false;
+                                const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
+                                if (dxBlock?.opcode !== 'data_variable') return false;
+                                const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
+                                if (varName !== 'ランダム') return false;
+
+                                // 3. 1秒まつ（最後）
+                                if (waitBlock?.opcode !== 'control_wait') return false;
+                                return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
+                            }
+                        },
+                        {
+                            id_old: 55,
+                            title: '1びょうごとに\nへんすう「ランダム」を\n-10から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n「ランダム」が 0より ちいさいときは 15ど まわす。\n※「1びょうまつ」は さいごに かこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 1) return false;
+
+                                const repeatUntilBlock = allBlocks[userSequence[0].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                // 端に触れたか判定
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+                                const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                                if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 4) return false;
+
+                                // 1. 変数「ランダム」を -10から30の乱数にする（最初）
+                                if (!DrillValidators.checkSetVariableToRandom(inner[0], allBlocks, 'ランダム', -10, 30)) return false;
+
+                                // 4. 1秒まつ（最後）
+                                const waitBlock = inner[3];
+                                if (waitBlock?.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 2と3: 中間の2つ（x座標変更 & もし「ランダム」< 0）
+                                const changeXBlock = inner.find(b => b?.opcode === 'motion_changexby');
+                                if (!changeXBlock || !changeXBlock.inputs) return false;
+                                const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
+                                if (dxBlock?.opcode !== 'data_variable') return false;
+                                const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
+                                if (varName !== 'ランダム') return false;
+
+                                const ifBlock = inner.find(b => b?.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                const ifCondBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(ifCondBlock, allBlocks, 'data_variable', 'lt', 0)) return false;
+
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1) return false;
+
+                                return DrillValidators.checkTurn(ifInner[0], allBlocks, 15);
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'まず かいてんほうほうを さゆうのみ にする。\n1びょうごとに\nへんすう「ランダム」を\n-10から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n「ランダム」が 0より ちいさいときは -90ど にむけ、\nでなければ 90ど にむける。\n※「1びょうまつ」は さいごに かこう！',
+                            validate: (userSequence, allBlocks) => {
+                                if (userSequence.length !== 2) return false;
+                                const [first, second] = userSequence;
+
+                                // 1. かいてんほうほうを「さゆうのみ」にする
+                                const styleBlock = allBlocks[first.blockId];
+                                if (styleBlock?.opcode !== 'motion_setrotationstyle') return false;
+                                if (styleBlock?.fields?.STYLE?.value !== 'left-right') return false;
+
+                                // 2. はしに つくまで くりかえす
+                                const repeatUntilBlock = allBlocks[second.blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                // 2-1. 条件: はしに ふれた
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
+                                const touchMenu = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
+                                if (touchMenu?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
+
+                                // 2-2. くりかえしの内側 (4個)
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 4) return false;
+
+                                // 【1番目 (固定)】へんすう「ランダム」を -10から30までの らんすうにする
+                                const setVarBlock = inner[0];
+                                if (setVarBlock?.opcode !== 'data_setvariableto' || !setVarBlock.fields) return false;
+                                const varField = setVarBlock.fields.VARIABLE;
+                                if (!varField || (varField.value !== 'ランダム' && varField.id !== 'ランダム')) return false;
+
+                                const randomBlock = allBlocks[setVarBlock.inputs?.VALUE?.block];
+                                if (!DrillValidators.checkRandom(randomBlock, allBlocks, -10, 30)) return false;
+
+                                // 【2番目・3番目 (順不同)】「x座標を変更」と「もし〜でなければ」を探す
+                                const midBlocks = [inner[1], inner[2]];
+                                const changeXBlock = midBlocks.find(b => b?.opcode === 'motion_changexby');
+                                const ifElseBlock = midBlocks.find(b => b?.opcode === 'control_if_else');
+
+                                if (!changeXBlock || !ifElseBlock) return false;
+
+                                // --- xざひょうを「ランダム」のかずだけ ふやす のチェック ---
+                                if (!changeXBlock.inputs) return false;
+                                const xVarBlock = allBlocks[changeXBlock.inputs.DX?.block];
+                                if (xVarBlock?.opcode !== 'data_variable' || !xVarBlock.fields) return false;
+                                const xVarField = xVarBlock.fields.VARIABLE;
+                                if (!xVarField || (xVarField.value !== 'ランダム' && xVarField.id !== 'ランダム')) return false;
+
+                                // --- 「もし〜でなければ」のチェック ---
+                                if (!ifElseBlock.inputs) return false;
+
+                                // 条件判定: 「ランダム」 < 0
+                                const ifCondBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
+                                if (ifCondBlock?.opcode !== 'operator_lt' || !ifCondBlock.inputs) return false;
+
+                                const ltVarBlock = allBlocks[ifCondBlock.inputs.OPERAND1?.block];
+                                if (ltVarBlock?.opcode !== 'data_variable' || !ltVarBlock.fields) return false;
+                                const ltVarField = ltVarBlock.fields.VARIABLE;
+                                if (!ltVarField || (ltVarField.value !== 'ランダム' && ltVarField.id !== 'ランダム')) return false;
+
+                                if (String(DrillValidators.getInputValue(ifCondBlock, 'OPERAND2', allBlocks)) !== '0') return false;
+
+                                // 「もし」の中身 (SUBSTACK): -90度に向ける
+                                const ifSubstack = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
+                                if (ifSubstack.length !== 1) return false;
+                                const pointNeg90 = ifSubstack[0];
+                                if (pointNeg90?.opcode !== 'motion_pointindirection') return false;
+                                if (String(DrillValidators.getInputValue(pointNeg90, 'DIRECTION', allBlocks)) !== '-90') return false;
+
+                                // 「でなければ」の中身 (SUBSTACK2): 90度に向ける
+                                const elseSubstack = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
+                                if (elseSubstack.length !== 1) return false;
+                                const point90 = elseSubstack[0];
+                                if (point90?.opcode !== 'motion_pointindirection') return false;
+                                if (String(DrillValidators.getInputValue(point90, 'DIRECTION', allBlocks)) !== '90') return false;
+
+                                // 【4番目 (固定)】1びょうまつ
+                                const waitBlock = inner[3];
+                                if (waitBlock?.opcode !== 'control_wait') return false;
+                                return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
+                            }
+                        }
+                    ]
                 }
             ]
             this.questions = [
@@ -1568,338 +2010,6 @@
                         if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
 
                         return true;
-                    }
-                },
-                {
-                    id: 46,
-                    title: 'まず へんすう「のこりじかん」を 15にして、\n1びょう ごとに 1へらす ことを\n15かい くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        // 1. 「のこりじかん」を 15 にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 15)) return false;
-
-                        // 2. 15回くりかえす
-                        const repeatBlock = allBlocks[userSequence[1].blockId];
-                        if (repeatBlock?.opcode !== 'control_repeat') return false;
-                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '15') return false;
-
-                        // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
-                        const inner = DrillValidators.getInnerBlocks(repeatBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 2) return false;
-
-                        const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                        if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
-                        return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
-                    }
-                },
-                {
-                    id: 47,
-                    title: 'まず へんすう「のこりじかん」を 10にして、\n1びょう ごとに 1へらす ことを\n15かい くりかえす。\n※へんすうが マイナスに なっちゃうかも！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        // 1. 「のこりじかん」を 10 にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
-
-                        // 2. 15回くりかえす
-                        const repeatBlock = allBlocks[userSequence[1].blockId];
-                        if (repeatBlock?.opcode !== 'control_repeat') return false;
-                        if (String(DrillValidators.getInputValue(repeatBlock, 'TIMES', allBlocks)) !== '15') return false;
-
-                        // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
-                        const inner = DrillValidators.getInnerBlocks(repeatBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 2) return false;
-
-                        const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                        if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
-                        return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
-                    }
-                },
-                {
-                    id: 48,
-                    title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえす',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        // 1. 「のこりじかん」を 10 にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
-
-                        // 2. 「のこりじかん」= 0 になるまでくりかえす
-                        const repeatUntilBlock = allBlocks[userSequence[1].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
-
-                        // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 2) return false;
-
-                        const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                        if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
-                        return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
-                    }
-                },
-                {
-                    id: 49,
-                    title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえし、\n0に なったら\nメッセージ「１かいてん」を おくる。\n※「もし」は つかわずに できるよ！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-
-                        // 1. 「のこりじかん」を 10 にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
-
-                        // 2. 「のこりじかん」= 0 になるまでくりかえす
-                        const repeatUntilBlock = allBlocks[userSequence[1].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
-
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 2) return false;
-
-                        const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                        if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
-                        if (!DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1)) return false;
-
-                        // 3. ループ終了直後に メッセージ「１かいてん」を送る
-                        const broadcastBlock = allBlocks[userSequence[2].blockId];
-                        if (broadcastBlock?.opcode !== 'event_broadcast') return false;
-
-                        return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === '１かいてん';
-                    }
-                },
-                {
-                    id: 50,
-                    title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえす。\n3に なったときに\nメッセージ「かくだい」を おくり、\n0に なったら\nメッセージ「１かいてん」を おくる。\n※「もし」は 1つだけ つかうよ！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 3) return false;
-
-                        // 1. 「のこりじかん」を 10 にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
-
-                        // 2. 「のこりじかん」= 0 になるまでくりかえす
-                        const repeatUntilBlock = allBlocks[userSequence[1].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
-
-                        // 中身: 「1秒まつ」「-1減らす」「もし『のこりじかん』= 3 なら メッセージ『かくだい』を送る」の 3ブロック
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 3) return false;
-
-                        const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                        if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
-                        if (!DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1)) return false;
-
-                        // もし「のこりじかん」= 3 なら
-                        const ifBlock = inner.find(b => b.opcode === 'control_if');
-                        if (!ifBlock || !ifBlock.inputs) return false;
-
-                        const ifCondBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(ifCondBlock, allBlocks, 'data_variable', 'eq', 3)) return false;
-
-                        const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
-                        if (ifInner.length !== 1 || ifInner[0]?.opcode !== 'event_broadcast') return false;
-                        if (DrillValidators.getBroadcastMessage(ifInner[0], allBlocks) !== 'かくだい') return false;
-
-                        // 3. ループ終了直後に メッセージ「１かいてん」を送る
-                        const broadcastBlock = allBlocks[userSequence[2].blockId];
-                        if (broadcastBlock?.opcode !== 'event_broadcast') return false;
-
-                        return DrillValidators.getBroadcastMessage(broadcastBlock, allBlocks) === '１かいてん';
-                    }
-                },
-                {
-                    id: 51,
-                    title: 'へんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※なんども ためしに うごかしてみよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        // 1. 変数「ランダム」を 0から1の乱数にする
-                        const setVarBlock = allBlocks[userSequence[0].blockId];
-                        if (!DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', 0, 1)) return false;
-
-                        // 2. もし〜でなければ
-                        const ifElseBlock = allBlocks[userSequence[1].blockId];
-                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
-
-                        // 2-1. 条件式（「ランダム」= 0）
-                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
-
-                        // 2-2. もし: かくす 1個
-                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
-                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
-
-                        // 2-3. でなければ: ひょうじする 1個
-                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
-                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
-
-                        return true;
-                    }
-                },
-                {
-                    id: 52,
-                    title: 'ずっと 1びょうごとに\nへんすう「ランダム」を\n0から1までの らんすうに して、\nもし「ランダム」が 0だったら かくして、\nでなければ ひょうじする。\n※「1びょうまつ」は さいごに かこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 3) return false;
-                        const [randBlock, ifElseBlock, waitBlock] = inner;
-
-                        if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 1)) return false;
-
-                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
-
-                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
-
-                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
-                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_hide') return false;
-
-                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
-                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_show') return false;
-
-                        if (waitBlock?.opcode !== 'control_wait') return false;
-                        return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
-                    }
-                },
-                {
-                    id: 53,
-                    title: 'ずっと xざひょうを 2 ふやしながら、\nへんすう「ランダム」を\n-10から10までの らんすうに して、\nyざひょうを「ランダム」のかずに する',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 3) return false;
-
-                        // 1. xざひょうを 2 ふやす
-                        const changeXBlock = inner.find(b => b.opcode === 'motion_changexby');
-                        if (!changeXBlock) return false;
-                        if (String(DrillValidators.getInputValue(changeXBlock, 'DX', allBlocks)) !== '2') return false;
-
-                        // 2. 変数「ランダム」を -10から10までの乱数にする
-                        const setVarBlock = inner.find(b => b.opcode === 'data_setvariableto');
-                        if (!setVarBlock || !DrillValidators.checkSetVariableToRandom(setVarBlock, allBlocks, 'ランダム', -10, 10)) return false;
-
-                        // 3. yざひょうを「ランダム」のかずにする
-                        const setYBlock = inner.find(b => b.opcode === 'motion_sety');
-                        if (!setYBlock || !setYBlock.inputs) return false;
-
-                        const yValBlock = allBlocks[setYBlock.inputs.Y?.block];
-                        if (yValBlock?.opcode !== 'data_variable' || !yValBlock.fields) return false;
-                        const varField = yValBlock.fields.VARIABLE;
-                        if (!varField || (varField.value !== 'ランダム' && varField.id !== 'ランダム')) return false;
-
-                        return;
-                    }
-                },
-                {
-                    id: 54,
-                    title: '1びょうごとに\nへんすう「ランダム」を\n0から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n※「1びょうまつ」は さいごに かこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const repeatUntilBlock = allBlocks[userSequence[0].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        // 端に触れたか判定
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
-                        const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
-                        if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 3) return false;
-                        const [randBlock, changeXBlock, waitBlock] = inner;
-
-                        // 1. 変数「ランダム」を 0から30の乱数にする
-                        if (!DrillValidators.checkSetVariableToRandom(randBlock, allBlocks, 'ランダム', 0, 30)) return false;
-
-                        // 2. xざひょうを「ランダム」ずつ変える
-                        if (changeXBlock?.opcode !== 'motion_changexby' || !changeXBlock.inputs) return false;
-                        const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
-                        if (dxBlock?.opcode !== 'data_variable') return false;
-                        const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
-                        if (varName !== 'ランダム') return false;
-
-                        // 3. 1秒まつ（最後）
-                        if (waitBlock?.opcode !== 'control_wait') return false;
-                        return String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) === '1';
-                    }
-                },
-                {
-                    id: 55,
-                    title: '1びょうごとに\nへんすう「ランダム」を\n-10から30までの らんすうに して\nxざひょうを「ランダム」のかずだけ ふやすことを、\nはしに つくまで くりかえす。\n「ランダム」が 0より ちいさいときは 15ど まわす。\n※「1びょうまつ」は さいごに かこう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const repeatUntilBlock = allBlocks[userSequence[0].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        // 端に触れたか判定
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
-                        const menuBlock = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
-                        if (menuBlock?.fields?.TOUCHINGOBJECTMENU?.value !== '_edge_') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 4) return false;
-
-                        // 1. 変数「ランダム」を -10から30の乱数にする（最初）
-                        if (!DrillValidators.checkSetVariableToRandom(inner[0], allBlocks, 'ランダム', -10, 30)) return false;
-
-                        // 4. 1秒まつ（最後）
-                        const waitBlock = inner[3];
-                        if (waitBlock?.opcode !== 'control_wait') return false;
-                        if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                        // 2と3: 中間の2つ（x座標変更 & もし「ランダム」< 0）
-                        const middleBlocks = [inner[1], inner[2]];
-
-                        const changeXBlock = middleBlocks.find(b => b?.opcode === 'motion_changexby');
-                        if (!changeXBlock || !changeXBlock.inputs) return false;
-                        const dxBlock = allBlocks[changeXBlock.inputs.DX?.block];
-                        if (dxBlock?.opcode !== 'data_variable') return false;
-                        const varName = dxBlock.fields?.VARIABLE?.value || dxBlock.fields?.VARIABLE?.id;
-                        if (varName !== 'ランダム') return false;
-
-                        const ifBlock = middleBlocks.find(b => b?.opcode === 'control_if');
-                        if (!ifBlock || !ifBlock.inputs) return false;
-
-                        const ifCondBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(ifCondBlock, allBlocks, 'data_variable', 'lt', 0)) return false;
-
-                        const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
-                        if (ifInner.length !== 1) return false;
-
-                        return DrillValidators.checkTurn(ifInner[0], allBlocks, 15);
                     }
                 },
                 {
@@ -2331,10 +2441,7 @@
         // ネコのスプライトを常に最背面に維持する
         keepCatInBack () {
             // 前回のタイマーが残っていればクリア
-            if (this._catBackInterval) {
-                clearInterval(this._catBackInterval);
-                this._catBackInterval = null;
-            }
+            this.stopCatBack();
 
             // 100msごとにネコを最背面に移動
             this._catBackInterval = setInterval(() => {
@@ -2358,15 +2465,13 @@
                 const pendingVars = new Set(targetVars);
 
                 // 2.2. 前回の変数監視タイマーが残っていればクリア
-                if (this._varCheckInterval) {
-                    clearInterval(this._varCheckInterval);
-                }
+                this.stopVarCheck();
 
                 // 2.3. 100msごとに変数を監視（VMのステップ状態に依存しない）
                 this._varCheckInterval = setInterval(() => {
                     pendingVars.forEach(varName => {
                         const val = this.getVariableValueByName(varName);
-                        console.log(`Now ${varName} is `, val);
+                        // console.log(`Now ${varName} is `, val);
 
                         // 初期値(-1)以外に変更されたら表示し、監視対象から外す
                         if (val !== null && val !== -1 && val !== '-1') {
