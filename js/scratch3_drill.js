@@ -2378,6 +2378,93 @@
                             }
                         }
                     ]
+                },
+                {
+                    id: 300,
+                    category: 'ダイアログ',
+                    title: 'しつもん・こたえ',
+                    description: 'ダイアログの入力の使用',
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ねこが すうじを しつもんして\nxざひょうを こたえの すうじに する。\n※しつもんする ぶんしょうは なんでもいいよ！\nたとえば：「なんのすうじにする？」',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 2) return false;
+                                const [first, second] = mainSequence;
+
+                                // 1. しつもんする（〜ときいてまつ）
+                                const askBlock = allBlocks[first.blockId];
+                                if (askBlock?.opcode !== 'sensing_askandwait') return false;
+
+                                // 2. xざひょうを こたえのすうじにする
+                                const setXBlock = allBlocks[second.blockId];
+                                if (setXBlock?.opcode !== 'motion_setx' || !setXBlock.inputs) return false;
+
+                                const ansBlock = allBlocks[setXBlock.inputs.X?.block];
+                                return ansBlock?.opcode === 'sensing_answer';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ねこが すうじを しつもんして\nこたえの かいすう\n15ど まわす。\n※しつもんする ぶんしょうは なんでもいいよ！\nたとえば：「なんかい まわす？」',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 2) return false;
+                                const [first, second] = mainSequence;
+
+                                // 1. しつもんする（〜ときいてまつ）
+                                const askBlock = allBlocks[first.blockId];
+                                if (askBlock?.opcode !== 'sensing_askandwait') return false;
+
+                                // 2. 「こたえ」の回数 くりかえす
+                                const repeatBlock = allBlocks[second.blockId];
+                                if (repeatBlock?.opcode !== 'control_repeat' || !repeatBlock.inputs) return false;
+
+                                const timesBlock = allBlocks[repeatBlock.inputs.TIMES?.block];
+                                if (timesBlock?.opcode !== 'sensing_answer') return false;
+
+                                // くりかえしの内側: 15度まわす (checkTurnを使用)
+                                const inner = DrillValidators.getInnerBlocks(repeatBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 1) return false;
+
+                                return DrillValidators.checkTurn(inner[0], allBlocks, 15);
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ねこが すうじを しつもんして\nリスト「アルファベット」の「こたえ」ばんめを\nねこが 2びょう しゃべる。\nこれを ずっと くりかえす。\n※しつもんする ぶんしょうは なんでもいいよ！\nたとえば：「なんばんめにする？」',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const checkList = (b, name) => b?.fields?.LIST?.value === name || b?.fields?.LIST?.id === name;
+
+                                // 1. ずっと くりかえす
+                                const foreverBlock = allBlocks[mainSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                // 「ずっと」の内側 (2個: しつもんする -> 言う)
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const [askBlock, sayBlock] = inner;
+
+                                // 1-1. しつもんする（〜ときいてまつ）
+                                if (askBlock?.opcode !== 'sensing_askandwait') return false;
+
+                                // 1-2. リスト「アルファベット」の「こたえ」番目を 2秒しゃべる
+                                if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '2') return false;
+
+                                const itemBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
+                                if (itemBlock?.opcode !== 'data_itemoflist' || !checkList(itemBlock, 'アルファベット')) return false;
+
+                                const indexBlock = allBlocks[itemBlock.inputs?.INDEX?.block];
+                                return indexBlock?.opcode === 'sensing_answer';
+                            }
+                        }
+                    ]
                 }
             ]
         }
