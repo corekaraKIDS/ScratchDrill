@@ -1641,6 +1641,9 @@
                 },
                 {
                     id: 2101,
+                    category: '変数',
+                    title: 'へんすう その1',
+                    description: '変数を用いたカウントダウン機能',
                     questions: [
                         {
                             id_old: 46,
@@ -1729,7 +1732,39 @@
                 },
                 {
                     id: 2102,
+                    category: '変数',
+                    title: 'へんすう その2',
+                    description: '変数を用いたカウントダウン機能・変数の値による条件分岐・繰り返し後の処理',
                     questions: [
+                        {
+                            id_old: 48,
+                            title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえす',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 2) return false;
+
+                                // 1. 「のこりじかん」を 10 にする
+                                const setVarBlock = allBlocks[mainSequence[0].blockId];
+                                if (!DrillValidators.checkVariable(setVarBlock, allBlocks, 'data_setvariableto', 'のこりじかん', 10)) return false;
+
+                                // 2. 「のこりじかん」= 0 になるまでくりかえす
+                                const repeatUntilBlock = allBlocks[mainSequence[1].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'data_variable', 'eq', 0)) return false;
+
+                                // 中身: 「1秒まつ」と「『のこりじかん』を -1 変える」（順不同OK）
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const changeVarBlock = inner.find(b => b.opcode === 'data_changevariableby');
+                                return DrillValidators.checkVariable(changeVarBlock, allBlocks, 'data_changevariableby', 'のこりじかん', -1);
+                            }
+                        },
                         {
                             id: 49,
                             title: 'まず へんすう「のこりじかん」を 10にして、\n「のこりじかん」が 0に なるまで\n1びょう ごとに 1へらす ことを くりかえし、\n0に なったら\nメッセージ「１かいてん」を おくる。\n※「もし」は つかわずに できるよ！',
@@ -1813,16 +1848,10 @@
                     ]
                 },
                 {
-                    id: 2103,
-                    questions: [
-                        {
-                            id_old: -1,
-                            title: '未定'
-                        }
-                    ]
-                },
-                {
                     id: 2104,
+                    category: '乱数',
+                    title: 'らんすう その1',
+                    description: '乱数の基礎',
                     questions: [
                         {
                             id_old: 51,
@@ -1923,6 +1952,9 @@
                 },
                 {
                     id: 2105,
+                    category: '乱数',
+                    title: 'らんすう その2',
+                    description: '乱数を用いた動きの実装',
                     questions: [
                         {
                             id_old: 54,
@@ -2091,246 +2123,263 @@
                             }
                         }
                     ]
+                },
+                {
+                    id: 200,
+                    category: 'リスト',
+                    title: 'リスト（はいれつ）その1',
+                    description: 'リスト（配列）からの要素の取り出し',
+                    questions: [
+                        {
+                            id_old: 56,
+                            title: 'リスト「アルファベット」の 1ばんめを\nねこが 1びょう しゃべる。\n※「～と ～びょう いう」を つかおう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const sayBlock = allBlocks[mainSequence[0].blockId];
+                                if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
+                                if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
+
+                                const listField = msgBlock.fields.LIST;
+                                if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+
+                                return String(DrillValidators.getInputValue(msgBlock, 'INDEX', allBlocks)) === '1';
+                            }
+                        },
+                        {
+                            id_old: 57,
+                            title: '1から26までの らんすうを つかって\nリスト「アルファベット」の ランダムな もじを\nねこが 1びょう しゃべる。\n※「～と ～びょう いう」を つかおう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const sayBlock = allBlocks[mainSequence[0].blockId];
+                                if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
+                                if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
+
+                                const listField = msgBlock.fields.LIST;
+                                if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+
+                                const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
+                                return DrillValidators.checkRandom(indexBlock, allBlocks, 1, 26);
+                            }
+                        },
+                        {
+                            id_old: 58,
+                            title: 'ずっと 1びょうごとに\n1から26までの らんすうを つかって\nリスト「アルファベット」の ランダムな もじを\nねこが しゃべりつづける。\n※「～と ～びょう いう」を つかおう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[mainSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 1) return false;
+
+                                const sayForSecsBlock = inner[0];
+                                if (sayForSecsBlock?.opcode !== 'looks_sayforsecs' || !sayForSecsBlock.inputs) return false;
+
+                                if (String(DrillValidators.getInputValue(sayForSecsBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const msgBlock = allBlocks[sayForSecsBlock.inputs.MESSAGE?.block];
+                                if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
+
+                                const listField = msgBlock.fields.LIST;
+                                if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+
+                                const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
+                                return DrillValidators.checkRandom(indexBlock, allBlocks, 1, 26);
+                            }
+                        },
+                    ]
+                },
+                {
+                    id: 201,
+                    category: 'リスト',
+                    title: 'リスト（はいれつ）その2',
+                    description: 'リスト（配列）の初期化と要素の追加・削除',
+                    questions: [
+                        {
+                            id_old: 59,
+                            title: 'リスト「アルファベット」を からっぽにして\nすきな もじを 3つ ついかしてから、\nずっと 1びょうごとに\nらんすうを つかって\nランダムな もじを\nねこが しゃべりつづける。\n※「～と ～びょう いう」を つかおう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 5) return false;
+
+                                // 1. リスト「アルファベット」のすべてを削除する
+                                const deleteAllBlock = allBlocks[mainSequence[0].blockId];
+                                if (deleteAllBlock?.opcode !== 'data_deletealloflist' || !deleteAllBlock.fields) return false;
+                                const listField0 = deleteAllBlock.fields.LIST;
+                                if (!listField0 || (listField0.value !== 'アルファベット' && listField0.id !== 'アルファベット')) return false;
+
+                                // 2~4. 文字を 3つ追加する
+                                for (let i = 1; i <= 3; i++) {
+                                    const addBlock = allBlocks[mainSequence[i].blockId];
+                                    if (addBlock?.opcode !== 'data_addtolist' || !addBlock.fields) return false;
+                                    const listField = addBlock.fields.LIST;
+                                    if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+                                }
+
+                                // 5. ずっと
+                                const foreverBlock = allBlocks[mainSequence[4].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 1) return false;
+
+                                const sayForSecsBlock = inner[0];
+                                if (sayForSecsBlock?.opcode !== 'looks_sayforsecs' || !sayForSecsBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayForSecsBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const msgBlock = allBlocks[sayForSecsBlock.inputs.MESSAGE?.block];
+                                if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
+
+                                const listField = msgBlock.fields.LIST;
+                                if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+
+                                // 乱数判定: 1から3の乱数、または 1から「長さ」の乱数
+                                const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
+                                if (!indexBlock || indexBlock.opcode !== 'operator_random') return false;
+
+                                if (String(DrillValidators.getInputValue(indexBlock, 'FROM', allBlocks)) !== '1') return false;
+
+                                const toVal = DrillValidators.getInputValue(indexBlock, 'TO', allBlocks);
+                                const toInputBlock = allBlocks[indexBlock.inputs?.TO?.block];
+
+                                const isTo3 = String(toVal) === '3';
+                                const isToLength = toInputBlock?.opcode === 'data_lengthoflist' &&
+                                    (toInputBlock.fields?.LIST?.value === 'アルファベット' || toInputBlock.fields?.LIST?.id === 'アルファベット');
+
+                                return isTo3 || isToLength;
+                            }
+                        },
+                        {
+                            id_old: 60,
+                            title: 'リスト「アルファベット」の 1ばんめを\nねこが 1びょう しゃべって、\nそのあとで リストの 1ばんめを さくじょする ことを、\nリストの ながさが 0になるまで くりかえす',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const repeatUntilBlock = allBlocks[mainSequence[0].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                // 1. 条件式: リスト「アルファベット」の長さ = 0
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (!condBlock || condBlock.opcode !== 'operator_equals' || !condBlock.inputs) return false;
+
+                                const isLengthZero = (valBlock, numInputName) => {
+                                    if (valBlock?.opcode !== 'data_lengthoflist' || !valBlock.fields) return false;
+                                    const listField = valBlock.fields.LIST;
+                                    if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
+                                    return String(DrillValidators.getInputValue(condBlock, numInputName, allBlocks)) === '0';
+                                };
+
+                                const op1 = allBlocks[condBlock.inputs.OPERAND1?.block];
+                                const op2 = allBlocks[condBlock.inputs.OPERAND2?.block];
+                                if (!isLengthZero(op1, 'OPERAND2') && !isLengthZero(op2, 'OPERAND1')) return false;
+
+                                // 2. 内側のブロック (2個: 1秒いう -> 1番目を削除)
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                // 2-1. リスト「アルファベット」の 1番目を 1秒いう
+                                const sayBlock = inner[0];
+                                if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
+                                if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
+                                const msgListField = msgBlock.fields.LIST;
+                                if (!msgListField || (msgListField.value !== 'アルファベット' && msgListField.id !== 'アルファベット')) return false;
+                                if (String(DrillValidators.getInputValue(msgBlock, 'INDEX', allBlocks)) !== '1') return false;
+
+                                // 2-2. リスト「アルファベット」の 1番目を削除する
+                                const deleteBlock = inner[1];
+                                if (deleteBlock?.opcode !== 'data_deleteoflist' || !deleteBlock.fields) return false;
+                                const deleteListField = deleteBlock.fields.LIST;
+                                if (!deleteListField || (deleteListField.value !== 'アルファベット' && deleteListField.id !== 'アルファベット')) return false;
+
+                                return String(DrillValidators.getInputValue(deleteBlock, 'INDEX', allBlocks)) === '1';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'へんすう「ランダム」を 1から\nリスト「アルファベット」の ながさまでの らんすうに して\nリストの「ランダム」ばんめを\nねこが 1びょう しゃべって、\nそのあとで リストの「ランダム」ばんめを さくじょする ことを、\nリストの ながさが 0になるまで くりかえす',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                // 変数・リストの参照確認用ヘルパー
+                                const checkVar = (b, name) => b?.opcode === 'data_variable' && (b.fields?.VARIABLE?.value === name || b.fields?.VARIABLE?.id === name);
+                                const checkList = (b, name) => b?.fields?.LIST?.value === name || b?.fields?.LIST?.id === name;
+                                const isLengthOfList = (b) => b?.opcode === 'data_lengthoflist' && checkList(b, 'アルファベット');
+
+                                // 1. 〜までくりかえす ブロック
+                                const repeatUntilBlock = allBlocks[mainSequence[0].blockId];
+                                if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
+
+                                // 1-1. 条件判定: リスト「アルファベット」の長さ = 0
+                                const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'operator_equals' || !condBlock.inputs) return false;
+
+                                const op1 = allBlocks[condBlock.inputs.OPERAND1?.block];
+                                const op2 = allBlocks[condBlock.inputs.OPERAND2?.block];
+                                const val1 = DrillValidators.getInputValue(condBlock, 'OPERAND1', allBlocks);
+                                const val2 = DrillValidators.getInputValue(condBlock, 'OPERAND2', allBlocks);
+
+                                const condValid = (isLengthOfList(op1) && String(val2) === '0') || (isLengthOfList(op2) && String(val1) === '0');
+                                if (!condValid) return false;
+
+                                // 1-2. くりかえしの内側 (3個)
+                                const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 【1番目】へんすう「ランダム」を 1 から リスト「アルファベット」の長さ までの乱数にする
+                                const setVarBlock = inner[0];
+                                if (setVarBlock?.opcode !== 'data_setvariableto' || !setVarBlock.fields) return false;
+                                const v = setVarBlock.fields.VARIABLE;
+                                if (!v || (v.value !== 'ランダム' && v.id !== 'ランダム')) return false;
+
+                                const randomBlock = allBlocks[setVarBlock.inputs?.VALUE?.block];
+                                if (randomBlock?.opcode !== 'operator_random' || !randomBlock.inputs) return false;
+
+                                // 1 から
+                                if (String(DrillValidators.getInputValue(randomBlock, 'FROM', allBlocks)) !== '1') return false;
+
+                                // リスト「アルファベット」の長さ まで
+                                const toBlock = allBlocks[randomBlock.inputs.TO?.block];
+                                if (!isLengthOfList(toBlock)) return false;
+
+                                // 【2番目】リスト「アルファベット」の「ランダム」ばんめを 1びょう しゃべる
+                                const sayBlock = inner[1];
+                                if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
+                                if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
+
+                                const itemBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
+                                if (itemBlock?.opcode !== 'data_itemoflist' || !checkList(itemBlock, 'アルファベット')) return false;
+
+                                const indexBlock = allBlocks[itemBlock.inputs?.INDEX?.block];
+                                if (!checkVar(indexBlock, 'ランダム')) return false;
+
+                                // 【3番目】リストの「ランダム」ばんめを さくじょする
+                                const deleteBlock = inner[2];
+                                if (deleteBlock?.opcode !== 'data_deleteoflist' || !deleteBlock.inputs || !checkList(deleteBlock, 'アルファベット')) return false;
+
+                                const delIndexBlock = allBlocks[deleteBlock.inputs?.INDEX?.block];
+                                return checkVar(delIndexBlock, 'ランダム');
+                            }
+                        }
+                    ]
                 }
             ]
-            this.questions = [
-                {
-                    id: 41,
-                    title: 'まず どこかのばしょへ いって、\nxざひょうが 100よりも おおきかったら\nおおきさを 50%にして、\nでなければ おおきさを 100%にする。\n※なんども ためしに うごかしてみよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        const gotoBlock = allBlocks[userSequence[0].blockId];
-                        if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
-                        if (DrillValidators.getInputValue(gotoBlock, 'TO', allBlocks) !== '_random_') return false;
-
-                        const ifElseBlock = allBlocks[userSequence[1].blockId];
-                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
-
-                        const condBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
-                        if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_xposition', 'gt', 100)) return false;
-
-                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
-                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
-                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
-
-                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
-                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
-                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
-
-                        return true;
-                    }
-                },
-                {
-                    id: 42,
-                    title: 'まず どこかのばしょへ いって、\nxざひょうが 100よりも おおきいか\nyざひょうが 100よりも おおきいかの どちらかだったら\nおおきさを 50%にして、\nでなければ おおきさを 100%にする。\n※なんども ためしに うごかしてみよう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 2) return false;
-
-                        // 1. どこかのばしょへいく
-                        const gotoBlock = allBlocks[userSequence[0].blockId];
-                        if (gotoBlock?.opcode !== 'motion_goto' || !gotoBlock.inputs) return false;
-                        if (DrillValidators.getInputValue(gotoBlock, 'TO', allBlocks) !== '_random_') return false;
-
-                        // 2. もし〜でなければ
-                        const ifElseBlock = allBlocks[userSequence[1].blockId];
-                        if (ifElseBlock?.opcode !== 'control_if_else' || !ifElseBlock.inputs) return false;
-
-                        // 2-1. 条件式（「xざひょう > 100」 または 「yざひょう > 100」）
-                        const orBlock = allBlocks[ifElseBlock.inputs.CONDITION?.block];
-                        if (orBlock?.opcode !== 'operator_or' || !orBlock.inputs) return false;
-
-                        const leftCond = allBlocks[orBlock.inputs.OPERAND1?.block];
-                        const rightCond = allBlocks[orBlock.inputs.OPERAND2?.block];
-
-                        const isXGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_xposition', 'gt', 100);
-                        const isYGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_yposition', 'gt', 100);
-
-                        const hasXOrY = (isXGt100(leftCond) && isYGt100(rightCond)) ||
-                                    (isYGt100(leftCond) && isXGt100(rightCond));
-                        if (!hasXOrY) return false;
-
-                        // 2-2. もし: おおきさを 50%にする
-                        const thenBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK');
-                        if (thenBlocks.length !== 1 || thenBlocks[0]?.opcode !== 'looks_setsizeto') return false;
-                        if (String(DrillValidators.getInputValue(thenBlocks[0], 'SIZE', allBlocks)) !== '50') return false;
-
-                        // 2-3. でなければ: おおきさを 100%にする
-                        const elseBlocks = DrillValidators.getInnerBlocks(ifElseBlock, allBlocks, 'SUBSTACK2');
-                        if (elseBlocks.length !== 1 || elseBlocks[0]?.opcode !== 'looks_setsizeto') return false;
-                        if (String(DrillValidators.getInputValue(elseBlocks[0], 'SIZE', allBlocks)) !== '100') return false;
-
-                        return true;
-                    }
-                },
-                {
-                    id: 56,
-                    title: 'リスト「アルファベット」の 1ばんめを\nねこが 1びょう しゃべる。\n※「～と ～びょう いう」を つかおう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const sayBlock = allBlocks[userSequence[0].blockId];
-                        if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
-                        if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
-
-                        const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
-                        if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
-
-                        const listField = msgBlock.fields.LIST;
-                        if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-
-                        return String(DrillValidators.getInputValue(msgBlock, 'INDEX', allBlocks)) === '1';
-                    }
-                },
-                {
-                    id: 57,
-                    title: '1から26までの らんすうを つかって\nリスト「アルファベット」の ランダムな もじを\nねこが 1びょう しゃべる。\n※「～と ～びょう いう」を つかおう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const sayBlock = allBlocks[userSequence[0].blockId];
-                        if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
-                        if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
-
-                        const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
-                        if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
-
-                        const listField = msgBlock.fields.LIST;
-                        if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-
-                        const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
-                        return DrillValidators.checkRandom(indexBlock, allBlocks, 1, 26);
-                    }
-                },
-                {
-                    id: 58,
-                    title: 'ずっと 1びょうごとに\n1から26までの らんすうを つかって\nリスト「アルファベット」の ランダムな もじを\nねこが しゃべりつづける。\n※「～と ～びょう いう」を つかおう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const foreverBlock = allBlocks[userSequence[0].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 1) return false;
-
-                        const sayForSecsBlock = inner[0];
-                        if (sayForSecsBlock?.opcode !== 'looks_sayforsecs' || !sayForSecsBlock.inputs) return false;
-
-                        if (String(DrillValidators.getInputValue(sayForSecsBlock, 'SECS', allBlocks)) !== '1') return false;
-
-                        const msgBlock = allBlocks[sayForSecsBlock.inputs.MESSAGE?.block];
-                        if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
-
-                        const listField = msgBlock.fields.LIST;
-                        if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-
-                        const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
-                        return DrillValidators.checkRandom(indexBlock, allBlocks, 1, 26);
-                    }
-                },
-                {
-                    id: 59,
-                    title: 'リスト「アルファベット」を からっぽにして\nすきな もじを 3つ ついかしてから、\nずっと 1びょうごとに\nらんすうを つかって\nランダムな もじを\nねこが しゃべりつづける。\n※「～と ～びょう いう」を つかおう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 5) return false;
-
-                        // 1. リスト「アルファベット」のすべてを削除する
-                        const deleteAllBlock = allBlocks[userSequence[0].blockId];
-                        if (deleteAllBlock?.opcode !== 'data_deletealloflist' || !deleteAllBlock.fields) return false;
-                        const listField0 = deleteAllBlock.fields.LIST;
-                        if (!listField0 || (listField0.value !== 'アルファベット' && listField0.id !== 'アルファベット')) return false;
-
-                        // 2~4. 文字を 3つ追加する
-                        for (let i = 1; i <= 3; i++) {
-                            const addBlock = allBlocks[userSequence[i].blockId];
-                            if (addBlock?.opcode !== 'data_addtolist' || !addBlock.fields) return false;
-                            const listField = addBlock.fields.LIST;
-                            if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-                        }
-
-                        // 5. ずっと
-                        const foreverBlock = allBlocks[userSequence[4].blockId];
-                        if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                        const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 1) return false;
-
-                        const sayForSecsBlock = inner[0];
-                        if (sayForSecsBlock?.opcode !== 'looks_sayforsecs' || !sayForSecsBlock.inputs) return false;
-                        if (String(DrillValidators.getInputValue(sayForSecsBlock, 'SECS', allBlocks)) !== '1') return false;
-
-                        const msgBlock = allBlocks[sayForSecsBlock.inputs.MESSAGE?.block];
-                        if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
-
-                        const listField = msgBlock.fields.LIST;
-                        if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-
-                        // 乱数判定: 1から3の乱数、または 1から「長さ」の乱数
-                        const indexBlock = allBlocks[msgBlock.inputs.INDEX?.block];
-                        if (!indexBlock || indexBlock.opcode !== 'operator_random') return false;
-
-                        if (String(DrillValidators.getInputValue(indexBlock, 'FROM', allBlocks)) !== '1') return false;
-
-                        const toVal = DrillValidators.getInputValue(indexBlock, 'TO', allBlocks);
-                        const toInputBlock = allBlocks[indexBlock.inputs?.TO?.block];
-
-                        const isTo3 = String(toVal) === '3';
-                        const isToLength = toInputBlock?.opcode === 'data_lengthoflist' &&
-                            (toInputBlock.fields?.LIST?.value === 'アルファベット' || toInputBlock.fields?.LIST?.id === 'アルファベット');
-
-                        return isTo3 || isToLength;
-                    }
-                },
-                {
-                    id: 60,
-                    title: 'リスト「アルファベット」の 1ばんめを\nねこが 1びょう しゃべって、\nそのあとで リストの 1ばんめを さくじょする ことを、\nリストの ながさが 0になるまで くりかえす。\n※「～と ～びょう いう」を つかおう！',
-                    validate: (userSequence, allBlocks) => {
-                        if (userSequence.length !== 1) return false;
-
-                        const repeatUntilBlock = allBlocks[userSequence[0].blockId];
-                        if (repeatUntilBlock?.opcode !== 'control_repeat_until' || !repeatUntilBlock.inputs) return false;
-
-                        // 1. 条件式: リスト「アルファベット」の長さ = 0
-                        const condBlock = allBlocks[repeatUntilBlock.inputs.CONDITION?.block];
-                        if (!condBlock || condBlock.opcode !== 'operator_equals' || !condBlock.inputs) return false;
-
-                        const isLengthZero = (valBlock, numInputName) => {
-                            if (valBlock?.opcode !== 'data_lengthoflist' || !valBlock.fields) return false;
-                            const listField = valBlock.fields.LIST;
-                            if (!listField || (listField.value !== 'アルファベット' && listField.id !== 'アルファベット')) return false;
-                            return String(DrillValidators.getInputValue(condBlock, numInputName, allBlocks)) === '0';
-                        };
-
-                        const op1 = allBlocks[condBlock.inputs.OPERAND1?.block];
-                        const op2 = allBlocks[condBlock.inputs.OPERAND2?.block];
-                        if (!isLengthZero(op1, 'OPERAND2') && !isLengthZero(op2, 'OPERAND1')) return false;
-
-                        // 2. 内側のブロック (2個: 1秒いう -> 1番目を削除)
-                        const inner = DrillValidators.getInnerBlocks(repeatUntilBlock, allBlocks, 'SUBSTACK');
-                        if (inner.length !== 2) return false;
-
-                        // 2-1. リスト「アルファベット」の 1番目を 1秒いう
-                        const sayBlock = inner[0];
-                        if (sayBlock?.opcode !== 'looks_sayforsecs' || !sayBlock.inputs) return false;
-                        if (String(DrillValidators.getInputValue(sayBlock, 'SECS', allBlocks)) !== '1') return false;
-
-                        const msgBlock = allBlocks[sayBlock.inputs.MESSAGE?.block];
-                        if (msgBlock?.opcode !== 'data_itemoflist' || !msgBlock.fields) return false;
-                        const msgListField = msgBlock.fields.LIST;
-                        if (!msgListField || (msgListField.value !== 'アルファベット' && msgListField.id !== 'アルファベット')) return false;
-                        if (String(DrillValidators.getInputValue(msgBlock, 'INDEX', allBlocks)) !== '1') return false;
-
-                        // 2-2. リスト「アルファベット」の 1番目を削除する
-                        const deleteBlock = inner[1];
-                        if (deleteBlock?.opcode !== 'data_deleteoflist' || !deleteBlock.fields) return false;
-                        const deleteListField = deleteBlock.fields.LIST;
-                        if (!deleteListField || (deleteListField.value !== 'アルファベット' && deleteListField.id !== 'アルファベット')) return false;
-
-                        return String(DrillValidators.getInputValue(deleteBlock, 'INDEX', allBlocks)) === '1';
-                    }
-                }
-            ];
         }
 
         // ブロックの定義
@@ -2477,7 +2526,7 @@
         
         isValidQuestionId (args) {
             const startQuestionId = this.getVariableValueByName('せんたくばんごう');
-            if (!this.questions || this.questions.length === 0) return false;
+            if (!this.questionObjects || this.questionObjects.length === 0) return false;
             const targetId = parseInt(startQuestionId, 10);
             // questionObjects の中に、同じ id を持つ問題群があれば true を返す
             return this.questionObjects.some(qObj => qObj.id === targetId);
