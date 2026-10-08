@@ -8,18 +8,6 @@ const outputFilePath = path.join(__dirname, 'questions.csv');
 
 const fileContent = fs.readFileSync(inputFilePath, 'utf8');
 
-// 教材IDのフォーマット（例：1201 -> A2-01）
-const formatId = (code) => {
-    if (!code) return code;
-    const codeAsStr = String(code);
-    if (codeAsStr.length !== 4) return codeAsStr;
-
-    const map = { '1': 'A', '2': 'B', '3': 'C' };
-    const firstChar = map[codeAsStr[0]] || codeAsStr[0];
-
-    return `${firstChar}${codeAsStr[1]}-${codeAsStr.slice(2)}`;
-};
-
 // 1. "this.questionObjects =" の開始位置を探す
 const startTarget = 'this.questionObjects =';
 const startIdx = fileContent.indexOf(startTarget);
@@ -62,10 +50,13 @@ try {
 }
 
 // 4. CSV行の構築
-const csvRows = ['id,q_index,title,id_old'];
+const csvRows = ['id,category,set_title,description,q_index,q_title,id_old'];
 
 questionObjects.forEach(qObj => {
     const id = qObj.id;
+    const category = qObj.category;
+    const set_title = qObj.title;
+    const description = qObj.description;
     if (Array.isArray(qObj.questions)) {
         qObj.questions.forEach((q, idx) => {
             let title = q.title || '';
@@ -77,7 +68,7 @@ questionObjects.forEach(qObj => {
             // CSVダブルクォーテーションのエスケープ処理
             const escapedTitle = title.replace(/"/g, '""');
             
-            csvRows.push(`${formatId(id)},${idx + 1},"${escapedTitle}",${id_old}`);
+            csvRows.push(`${id},${category},${set_title},${description},${idx + 1},"${escapedTitle}",${id_old}`);
         });
     }
 });

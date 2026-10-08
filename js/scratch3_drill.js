@@ -242,21 +242,122 @@
             // 問題リストの定義
             this.questionObjects = [
                 {
-                    id: 1101,
+                    id: 100,
+                    category: '基礎',
+                    title: 'キソ その1',
+                    description: '順次実行',
                     questions: [
                         {
-                            id_old: -1,
-                            title: 'Scratchドリルに ようこそ！\nすきな プログラムを\n「ここから かきはじめる」の したに かいてみよう！\nかいたら\n「ためしにうごかす」で うごかしてみよう！\nさいごに「こたえあわせ」を おしてね！',
+                            id_old: 1,
+                            title: 'ネコを 100ほ うごかそう！',
                             validate: (mainSequence, subSequence, allBlocks) => {
+                                if (mainSequence.length !== 1) return false;
                                 if (subSequence.length !== 0) return false;
-                                if (mainSequence.length === 0) return false;
+                                const [first] = mainSequence;
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '100';
+                            }
+                        },
+                        {
+                            id_old: 2,
+                            title: 'ネコを 200ほ うごかそう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (mainSequence.length !== 1) return false;
+                                if (subSequence.length !== 0) return false;
+                                const [first] = mainSequence;
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '200';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ネコを 100ほ うごかして、\n1びょう まってから\nもういちど 100ほ うごかそう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                // 3つのブロックが並んでいるかチェック
+                                if (mainSequence.length !== 3) return false;
+                                if (subSequence.length !== 0) return false;
+                                const [first, second, third] = mainSequence;
+                                
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '100') return false;
+
+                                return true;
+                            }
+                        },
+                    ]  
+                },
+                {
+                    id: 101,
+                    category: '基礎',
+                    title: 'キソ その2',
+                    description: '正負の数',
+                    questions: [
+                        {
+                            id_old: 3,
+                            title: 'ネコを うしろに100ほ うごかそう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (mainSequence.length !== 1) return false;
+                                if (subSequence.length !== 0) return false;
+                                const [first] = mainSequence;
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '-100';
+                            }
+                        },
+                        {
+                            id_old: 4,
+                            title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに50ほ うごかそう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                // 3つのブロックが並んでいるかチェック
+                                if (mainSequence.length !== 3) return false;
+                                if (subSequence.length !== 0) return false;
+                                const [first, second, third] = mainSequence;
+                                
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '-50') return false;
+
+                                return true;
+                            }
+                        },
+                        {
+                            id_old: 5,
+                            title: 'まえに100ほ うごかして、\n1びょう まってから\nうしろに うごかそう！\nもとのばしょに もどってこよう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                // 3つのブロックが並んでいるかチェック
+                                if (mainSequence.length !== 3) return false;
+                                if (subSequence.length !== 0) return false;
+                                const [first, second, third] = mainSequence;
+                                
+                                if (first.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_movesteps') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '-100') return false;
+
                                 return true;
                             }
                         },
                     ]
                 },
                 {
-                    id: 1102,
+                    id: 1,
+                    category: '角度',
+                    title: 'かくど その1',
+                    description: '絶対角度',
                     questions: [
                         {
                             id_old: -1,
@@ -268,6 +369,18 @@
                                 
                                 if (first.opcode !== 'motion_pointindirection') return false;
                                 return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) === '180';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ネコの むきを\n0ど（うえ）に しよう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+                                const [first] = mainSequence;
+                                
+                                if (first.opcode !== 'motion_pointindirection') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) === '0';
                             }
                         },
                         {
@@ -291,20 +404,11 @@
                     ]
                 },
                 {
-                    id: 1103,
+                    id: 2,
+                    category: '角度',
+                    title: 'かくど その2',
+                    description: '絶対角度',
                     questions: [
-                        {
-                            id_old: -1,
-                            title: 'ネコの むきを\n0ど（うえ）に しよう！',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-                                const [first] = mainSequence;
-                                
-                                if (first.opcode !== 'motion_pointindirection') return false;
-                                return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) === '0';
-                            }
-                        },
                         {
                             id_old: -1,
                             title: 'むきを0ど（うえ）に して、\n1びょう まってから\nむきを-90ど（ひだり）に しよう！',
@@ -321,6 +425,24 @@
 
                                 if (third.opcode !== 'motion_pointindirection') return false;
                                 return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DIRECTION', allBlocks)) === '-90';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'むきを-90ど（ひだり）に して、\n1びょう まってから\nむきを90ど（みぎ）に しよう！',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 3) return false;
+                                const [first, second, third] = mainSequence;
+
+                                if (first.opcode !== 'motion_pointindirection') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'DIRECTION', allBlocks)) !== '-90') return false;
+
+                                if (second.opcode !== 'control_wait') return false;
+                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+
+                                if (third.opcode !== 'motion_pointindirection') return false;
+                                return String(DrillValidators.getInputValue(allBlocks[third.blockId], 'DIRECTION', allBlocks)) === '90';
                             }
                         },
                         {
@@ -349,9 +471,12 @@
                 },
                 {
                     id: 1104,
+                    category: '角度',
+                    title: 'かくど その3',
+                    description: '相対角度と絶対角度',
                     questions: [
                         {
-                            id_old: -1,
+                            id_old: 6,
                             title: 'ネコを みぎに15ど まわそう！',
                             validate: (mainSequence, subSequence, allBlocks) => {
                                 if (subSequence.length !== 0) return false;
@@ -417,6 +542,9 @@
                 },
                 {
                     id: 1105,
+                    category: '座標',
+                    title: 'ざひょう その1',
+                    description: '座標の数値の指定',
                     questions: [
                         {
                             id_old: 11,
@@ -469,6 +597,9 @@
                 },
                 {
                     id: 1106,
+                    category: '座標',
+                    title: 'ざひょう その2',
+                    description: '座標の変化量の指定・XYと上下左右の対応',
                     questions: [
                         {
                             id_old: 15,
@@ -534,6 +665,9 @@
                 },
                 {
                     id: 1107,
+                    category: '座標',
+                    title: 'ざひょう その3',
+                    description: '座標の変化量の指定・XYと上下左右の対応',
                     questions: [
                         {
                             id_old: 18,
@@ -599,6 +733,9 @@
                 },
                 {
                     id: 1108,
+                    category: '繰り返し',
+                    title: 'くりかえし その1',
+                    description: '回数を指定した繰り返し (for)',
                     questions: [
                         {
                             id_old: 26,
@@ -688,6 +825,9 @@
                 },
                 {
                     id: 1109,
+                    category: '繰り返し',
+                    title: 'くりかえし その2',
+                    description: '「ずっと」を用いた繰り返し',
                     questions: [
                         {
                             id_old: 22,
@@ -753,6 +893,9 @@
                 },
                 {
                     id: 1110,
+                    category: '繰り返し',
+                    title: 'くりかえし その3',
+                    description: '条件を指定した繰り返し (while)',
                     questions: [
                         {
                             id_old: 29,
@@ -871,6 +1014,9 @@
                 },
                 {
                     id: 1111,
+                    category: '繰り返し',
+                    title: 'くりかえし その4',
+                    description: '繰り返しの使い分け',
                     questions: [
                         {
                             id_old: -1,
@@ -932,36 +1078,10 @@
                     ]
                 },
                 {
-                    id: 1201,
-                    questions: [
-                        {
-                            id_old: -1,
-                            title: 'ねこは うごかさず、\nメッセージ「１かいてん」を おくる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-                                const [first] = mainSequence;
-
-                                if (first.opcode !== 'event_broadcast') return false;
-                                return (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) === '１かいてん');
-                            }
-                        },
-                        {
-                            id_old: -1,
-                            title: 'ねこは うごかさず、\nメッセージ「かくだい」を おくる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-                                const [first] = mainSequence;
-
-                                if (first.opcode !== 'event_broadcast') return false;
-                                return (DrillValidators.getBroadcastMessage(allBlocks[first.blockId], allBlocks) === 'かくだい');
-                            }
-                        }
-                    ]
-                },
-                {
                     id: 1202,
+                    category: 'メッセージ',
+                    title: 'メッセージ その1',
+                    description: 'メッセージを用いた同期処理と非同期処理',
                     questions: [
                         {
                             id_old: -1,
@@ -1008,25 +1128,29 @@
                             }
                         },
                         {
-                            id_old: 31,
-                            title: 'xざひょうを 2へらす ことを\n50かい くりかえし、\nそのあとで\nメッセージ「かくだい」を おくる',
+                            id_old: -1,
+                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\nおわるまで まってから\nメッセージ「かくだい」を おくる',
                             validate: (mainSequence, subSequence, allBlocks) => {
                                 if (subSequence.length !== 0) return false;
                                 if (mainSequence.length !== 2) return false;
                                 const [first, second] = mainSequence;
 
-                                // 1個目: x座標を -2 変えるのを 50回繰り返す
-                                if (!DrillValidators.checkRepeatChangeCoord(allBlocks[first.blockId], allBlocks, 'x', -2, 50)) return false;
+                                const firstBlock = allBlocks[first.blockId];
+                                if (firstBlock?.opcode !== 'event_broadcastandwait') return false;
+                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== '１かいてん') return false;
 
-                                // 2個目: メッセージ「かくだい」を送る
-                                if (second.opcode !== 'event_broadcast') return false;
-                                return DrillValidators.getBroadcastMessage(allBlocks[second.blockId], allBlocks) === 'かくだい';
+                                const secondBlock = allBlocks[second.blockId];
+                                if (secondBlock?.opcode !== 'event_broadcast') return false;
+                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === 'かくだい';
                             }
                         }
                     ]
                 },
                 {
                     id: 1203,
+                    category: 'メッセージ',
+                    title: 'メッセージ その2',
+                    description: 'メッセージを用いた複数スプライトの操作',
                     questions: [
                         {
                             id_old: 32,
@@ -1085,63 +1209,10 @@
                     ]
                 },
                 {
-                    id: 1204,
-                    questions: [
-                        {
-                            id_old: -1,
-                            title: 'ねこは うごかさず、まず\nメッセージ「かくだい」を おくり、\nすぐ あとに\nメッセージ「１かいてん」を おくる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 2) return false;
-                                const [first, second] = mainSequence;
-
-                                const firstBlock = allBlocks[first.blockId];
-                                if (firstBlock?.opcode !== 'event_broadcast') return false;
-                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== 'かくだい') return false;
-
-                                const secondBlock = allBlocks[second.blockId];
-                                if (secondBlock?.opcode !== 'event_broadcast') return false;
-                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === '１かいてん';
-                            }
-                        },
-                        {
-                            id_old: -1,
-                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\nすぐ あとに\nメッセージ「かくだい」を おくる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 2) return false;
-                                const [first, second] = mainSequence;
-
-                                const firstBlock = allBlocks[first.blockId];
-                                if (firstBlock?.opcode !== 'event_broadcast') return false;
-                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== '１かいてん') return false;
-
-                                const secondBlock = allBlocks[second.blockId];
-                                if (secondBlock?.opcode !== 'event_broadcast') return false;
-                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === 'かくだい';
-                            }
-                        },
-                        {
-                            id_old: -1,
-                            title: 'ねこは うごかさず、まず\nメッセージ「１かいてん」を おくり、\nおわるまで まってから\nメッセージ「かくだい」を おくる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 2) return false;
-                                const [first, second] = mainSequence;
-
-                                const firstBlock = allBlocks[first.blockId];
-                                if (firstBlock?.opcode !== 'event_broadcastandwait') return false;
-                                if (String(DrillValidators.getInputValue(firstBlock, 'BROADCAST_INPUT', allBlocks)) !== '１かいてん') return false;
-
-                                const secondBlock = allBlocks[second.blockId];
-                                if (secondBlock?.opcode !== 'event_broadcast') return false;
-                                return String(DrillValidators.getInputValue(secondBlock, 'BROADCAST_INPUT', allBlocks)) === 'かくだい';
-                            }
-                        }
-                    ]
-                },
-                {
                     id: 1205,
+                    category: '条件分岐',
+                    title: 'じょうけんぶんき その1',
+                    description: 'ifによる条件分岐（矢印キーでの上下左右の操作）',
                     questions: [
                         {
                             id_old: 36,
@@ -1203,121 +1274,10 @@
                     ]
                 },
                 {
-                    id: 1206,
-                    questions: [
-                        {
-                            id_old: -1,
-                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いく',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-
-                                const foreverBlock = allBlocks[mainSequence[0].blockId];
-                                if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                                if (inner.length !== 2) return false;
-
-                                // 1秒まつ & どこかのばしょへいく
-                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
-                                if (!waitBlock || !gotoBlock) return false;
-
-                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
-                                return toMenu?.fields?.TO?.value === '_random_';
-                            }
-                        },
-                        {
-                            id_old: -1,
-                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nマウスの ポインターに ふれたら\nつくった スクリプトを とめる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-
-                                const foreverBlock = allBlocks[mainSequence[0].blockId];
-                                if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                                if (inner.length !== 3) return false;
-
-                                // 1. 1秒まつ
-                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                                // 2. どこかのばしょへいく
-                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
-                                if (!gotoBlock) return false;
-                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
-                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
-
-                                // 3. もし マウスのポインターにふれたら
-                                const ifBlock = inner.find(b => b.opcode === 'control_if');
-                                if (!ifBlock || !ifBlock.inputs) return false;
-
-                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
-                                if (condBlock?.opcode !== 'sensing_touchingobject' || !condBlock.inputs) return false;
-
-                                const touchMenu = allBlocks[condBlock.inputs.TOUCHINGOBJECTMENU?.block];
-                                const targetName = touchMenu?.fields?.TOUCHINGOBJECTMENU?.value;
-                                if (targetName !== '_mouse_') return false;
-
-                                // 「もし」の内側: つくったスクリプト（または すべて）をとめる
-                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
-                                if (ifInner.length !== 1) return false;
-
-                                const stopBlock = ifInner[0];
-                                if (stopBlock?.opcode !== 'control_stop') return false;
-
-                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
-                                return stopType === 'this script' || stopType === 'all';
-                            }
-                        },
-                        {
-                            id_old: -1,
-                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nyざひょうが 100よりも おおきかったら\nつくった スクリプトを とめる',
-                            validate: (mainSequence, subSequence, allBlocks) => {
-                                if (subSequence.length !== 0) return false;
-                                if (mainSequence.length !== 1) return false;
-
-                                const foreverBlock = allBlocks[mainSequence[0].blockId];
-                                if (foreverBlock?.opcode !== 'control_forever') return false;
-
-                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
-                                if (inner.length !== 3) return false;
-
-                                // 1. 1秒まつ
-                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
-                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
-
-                                // 2. どこかのばしょへいく
-                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
-                                if (!gotoBlock) return false;
-                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
-                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
-
-                                // 3. もし yざひょう > 100 なら
-                                const ifBlock = inner.find(b => b.opcode === 'control_if');
-                                if (!ifBlock || !ifBlock.inputs) return false;
-
-                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
-                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_yposition', 'gt', 100)) return false;
-
-                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
-                                if (ifInner.length !== 1) return false;
-
-                                const stopBlock = ifInner[0];
-                                if (stopBlock?.opcode !== 'control_stop') return false;
-
-                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
-                                return stopType === 'this script' || stopType === 'all';
-                            }
-                        }
-                    ]
-                },
-                {
                     id: 1207,
+                    category: '条件分岐',
+                    title: 'じょうけんぶんき その2',
+                    description: 'if-elseによる条件分岐',
                     questions: [
                         {
                             id_old: 38,
@@ -1413,7 +1373,134 @@
                     ]
                 },
                 {
+                    id: 1206,
+                    category: '条件分岐',
+                    title: 'じょうけんぶんき その3',
+                    description: '条件分岐と不等式・OR',
+                    questions: [
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いく',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[mainSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 2) return false;
+
+                                // 1秒まつ & どこかのばしょへいく
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!waitBlock || !gotoBlock) return false;
+
+                                if (String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                return toMenu?.fields?.TO?.value === '_random_';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nyざひょうが 100よりも おおきかったら\nつくった スクリプトを とめる',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[mainSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 1. 1秒まつ
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 2. どこかのばしょへいく
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!gotoBlock) return false;
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
+
+                                // 3. もし yざひょう > 100 なら
+                                const ifBlock = inner.find(b => b.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (!DrillValidators.checkComparison(condBlock, allBlocks, 'motion_yposition', 'gt', 100)) return false;
+
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1) return false;
+
+                                const stopBlock = ifInner[0];
+                                if (stopBlock?.opcode !== 'control_stop') return false;
+
+                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
+                                return stopType === 'this script' || stopType === 'all';
+                            }
+                        },
+                        {
+                            id_old: -1,
+                            title: 'ずっと 1びょうごとに\nどこかの ばしょへ いって、\nxざひょうが 100よりも おおきいか\nyざひょうが 100よりも おおきいかの どちらかだったら\nつくった スクリプトを とめる',
+                            validate: (mainSequence, subSequence, allBlocks) => {
+                                if (subSequence.length !== 0) return false;
+                                if (mainSequence.length !== 1) return false;
+
+                                const foreverBlock = allBlocks[mainSequence[0].blockId];
+                                if (foreverBlock?.opcode !== 'control_forever') return false;
+
+                                const inner = DrillValidators.getInnerBlocks(foreverBlock, allBlocks, 'SUBSTACK');
+                                if (inner.length !== 3) return false;
+
+                                // 1. 1秒まつ
+                                const waitBlock = inner.find(b => b.opcode === 'control_wait');
+                                if (!waitBlock || String(DrillValidators.getInputValue(waitBlock, 'DURATION', allBlocks)) !== '1') return false;
+
+                                // 2. どこかのばしょへいく
+                                const gotoBlock = inner.find(b => b.opcode === 'motion_goto');
+                                if (!gotoBlock) return false;
+                                const toMenu = allBlocks[gotoBlock.inputs?.TO?.block];
+                                if (toMenu?.fields?.TO?.value !== '_random_') return false;
+
+                                // 3. もし ( x座標 > 100 または y座標 > 100 ) なら
+                                const ifBlock = inner.find(b => b.opcode === 'control_if');
+                                if (!ifBlock || !ifBlock.inputs) return false;
+
+                                // 条件: OR ブロック (operator_or)
+                                const condBlock = allBlocks[ifBlock.inputs.CONDITION?.block];
+                                if (condBlock?.opcode !== 'operator_or' || !condBlock.inputs) return false;
+
+                                const op1 = allBlocks[condBlock.inputs.OPERAND1?.block];
+                                const op2 = allBlocks[condBlock.inputs.OPERAND2?.block];
+
+                                const isXGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_xposition', 'gt', 100);
+                                const isYGt100 = (b) => DrillValidators.checkComparison(b, allBlocks, 'motion_yposition', 'gt', 100);
+
+                                // x > 100 または y > 100 の組み合わせチェック（順不同対応）
+                                const isValidCond = (isXGt100(op1) && isYGt100(op2)) || (isYGt100(op1) && isXGt100(op2));
+                                if (!isValidCond) return false;
+
+                                // 「もし」の内側: つくったスクリプト（または すべて）をとめる
+                                const ifInner = DrillValidators.getInnerBlocks(ifBlock, allBlocks, 'SUBSTACK');
+                                if (ifInner.length !== 1) return false;
+
+                                const stopBlock = ifInner[0];
+                                if (stopBlock?.opcode !== 'control_stop') return false;
+
+                                const stopType = stopBlock.fields?.STOP_OPTION?.value;
+                                return stopType === 'this script' || stopType === 'all';
+                            }
+                        }
+                    ]
+                },
+                {
                     id: 1208,
+                    category: '条件分岐',
+                    title: 'じょうけんぶんき その4',
+                    description: '条件分岐と等式・不等式・AND',
                     questions: [
                         {
                             id_old: 43,
