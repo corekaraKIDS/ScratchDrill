@@ -2491,9 +2491,14 @@
                         isEdgeActivated: false 
                     },
                     {
-                        opcode: 'testRun',
+                        opcode: 'handleTestRun',
                         blockType: Scratch.BlockType.COMMAND,
                         text: 'テストラン'
+                    },
+                    {
+                        opcode: 'handlePassClick',
+                        blockType: Scratch.BlockType.COMMAND,
+                        text: 'パス'
                     },
                     {
                         opcode: 'isValidQuestionId',
@@ -2521,6 +2526,7 @@
         getTargets (args, util) {
             let judge = null;
             let playButton = null;
+            let passButton = null;
             let cat = null;
             let post = null;
 
@@ -2530,20 +2536,23 @@
                 const blocks = target.blocks._blocks;
                 let hasCheckAnswer = false;
                 let hasTestRun = false;
+                let hasPass = false;
                 let hasHat = false;
 
                 for (const id in blocks) {
                     if (blocks[id].opcode === 'drill_checkAnswer') hasCheckAnswer = true;
-                    if (blocks[id].opcode === 'drill_testRun') hasTestRun = true;
+                    if (blocks[id].opcode === 'drill_handleTestRun') hasTestRun = true;
+                    if (blocks[id].opcode === 'drill_handlePassClick') hasPass = true;
                     if (blocks[id].opcode === 'drill_codeStart' || blocks[id].opcode === 'drill_codeStart_2') hasHat = true;
                 }
 
                 if (hasCheckAnswer) judge = target;
                 else if (hasTestRun) playButton = target;
+                else if (hasPass) passButton = target;
                 else if (hasHat) cat = target;
                 else post = target;
             }
-            return { cat, playButton, judge, post };
+            return { cat, playButton, passButton, judge, post };
         }
 
         // 変数名（文字列）を指定すると、その現在の値を返す関数
@@ -2680,6 +2689,78 @@
             this.stopVarCheck();
         }
 
+        /**
+         * パスボタンの状態・タイマーを初期状態（コスチューム 0）にリセット
+         */
+        resetPassState () {
+            // 5秒タイマーの解除
+            if (this._passTimer) {
+                clearTimeout(this._passTimer);
+                this._passTimer = null;
+            }
+
+            this.initializeSprites();
+        }
+
+        /**
+         * パスボタンがクリックされた時のハンドラー
+         */
+        handlePassClick (args, util) {
+            const { passButton } = this.getTargets();
+            const activePassButton = passButton || util.target;
+            if (!activePassButton) return;
+
+            // ----------------------------------------------------
+            // 1回目クリック：通常ボタン（コスチューム 0）のとき
+            // ----------------------------------------------------
+            if (activePassButton.currentCostume === 0) {
+                // コスチューム 1（確認メッセージ）へ切り替え
+                activePassButton.setCostume(1);
+                activePassButton.setXY(0, 0);
+                activePassButton.goToFront();
+
+                // 5秒間何もしなければ自動で元に戻す
+                if (this._passTimer) clearTimeout(this._passTimer);
+                this._passTimer = setTimeout(() => {
+                    this.resetPassState();
+                }, 5000);
+
+                return;
+            }
+
+            // ----------------------------------------------------
+            // 2回目クリック：確認メッセージ（コスチューム 1）のとき
+            // ----------------------------------------------------
+            if (activePassButton.currentCostume === 1) {
+                // タイマー解除＆コスチュームを 0 に戻す
+                this.resetPassState();
+
+                // パス確定処理（次の問題へ進む）
+                this.executePass();
+            }
+        }
+
+        /**
+         * パス実行時の処理
+         */
+        async executePass () {
+            const { judge } = this.getTargets();
+            const activeJudge = judge || util.target;
+            const soundBank = activeJudge?.sprite?.soundBank;
+            const sounds = activeJudge?.sprite?.sounds || [];
+            const passSound = sounds.find(s => s.name === 'pass');
+
+            this.sayFromJudge('またこんど せいかい できるように がんばろう！');
+            if (passSound && soundBank) {
+                await soundBank.playSound(activeJudge, passSound.soundId);
+            } 
+            setTimeout(() => {
+                this.currentQuestionIndex++;
+                this.initializeSprites();
+                this.askCurrentQuestion();
+            }, 2500);
+        }
+
         initializeSprites () {
             const stage = this.runtime.getTargetForStage();
 
@@ -2690,7 +2771,7 @@
                 stage.setCostume(gridIndex);
             }
 
-            const { cat, playButton, judge, post } = this.getTargets();
+            const { cat, playButton, passButton, judge, post } = this.getTargets();
             if (cat) {
                 this.runtime.stopForTarget(cat);
                 cat.setXY(0, 0);
@@ -2707,6 +2788,13 @@
                 playButton.setSize(100);
                 playButton.setVisible(true);  
                 playButton.setCostume(0);
+            }
+            if (passButton) {
+                passButton.setXY(-190, 105);
+                passButton.setDirection(90);
+                passButton.setSize(100);
+                passButton.setVisible(true);  
+                passButton.setCostume(0);
             }
             if (judge) {
                 judge.setXY(180, -140);
@@ -2744,7 +2832,7 @@
             }, 100);
         }
 
-        testRun (args, util) {
+        handleTestRun (args, util) {
             const { playButton } = this.getTargets();
             if (!playButton) {
                 console.log('テストランボタンが見つかりません');
