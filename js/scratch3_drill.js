@@ -235,9 +235,20 @@
     class Scratch3Drill {
         constructor (runtime) {
             this.runtime = runtime;
-            
-            // 現在の問題番号（0 = 1問目）
             this.currentQuestionIndex = 0;
+
+            // 1. URLパラメータの取得はロード時に勝手に行われる
+            this.initFromQueryParams();
+
+            // 2. すでにターゲット（ステージやスプライト）が読み込まれていれば即実行、まだならイベントを待つ
+            const isAlreadyLoaded = this.runtime.targets && this.runtime.targets.length > 1;
+            if (isAlreadyLoaded) {
+                this.setupInitialQuestion();
+            } else {
+                this.runtime.once('PROJECT_LOADED', () => {
+                    this.setupInitialQuestion();
+                });
+            }
 
             // 問題リストの定義
             this.questionObjects = [
@@ -2837,22 +2848,91 @@
                         text: 'パス'
                     },
                     {
-                        opcode: 'isValidQuestionId',
-                        blockType: Scratch.BlockType.BOOLEAN,
-                        text: 'もんだいばんごうOK'
-                    },
-                    {
-                        opcode: 'startDrillWithId',
-                        blockType: Scratch.BlockType.COMMAND,
-                        text: 'ドリルをスタートする'
-                    },
-                    {
                         opcode: 'checkAnswer',
                         blockType: Scratch.BlockType.COMMAND,
                         text: 'こたえあわせをする'
                     }
                 ]
             };
+        }
+        
+        getQueryParam (key) {
+            const loc = typeof window !== 'undefined' ? window.location : (typeof location !== 'undefined' ? location : null);
+            if (!loc || !loc.search) return null;
+            return new URLSearchParams(loc.search).get(key);
+        }
+
+        async initFromQueryParams () {
+            this.studentId = this.getQueryParam('studentId');
+            this.drillSetCode = this.getQueryParam('code');
+            this.isDev = this.getQueryParam('dev');
+
+            console.log('Loaded student id:', this.studentId, 'and drill set code:', this.drillSetCode);
+            if (this.isDev) console.log('DEV MODE');
+
+            // code パラメータが指定されていない場合のガード
+            if (!this.drillSetCode || !this.studentId) {
+                if (!this.drillSetCode) console.error('[Drill] drillSetCode (code parameter) is missing in URL.');
+                if (!this.studentId) console.error('[Drill] student ID is missing in URL.');
+                this.sayFromJudge('この リンクでは ドリルが できません。');
+                return;
+            }
+
+            // 非同期ロード処理を Promise として保持（他メソッドから await できるようにする）
+            this.loadQuestionsPromise = (async () => {
+                try {
+                    // APIエンドポイントのURL
+                    const apiUrl = `api/external/drill-sets/${encodeURIComponent(this.drillSetCode)}/questions`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    // 取得した問題オブジェクトをセット
+                    const data = await response.json();
+
+                    // questions オブジェクトを配列に変換（有効なものだけ抽出 & ID昇順で並び替え）
+                    this.questions = Object.values(data.questions)
+                        .filter(q => q.is_active)
+                        .sort((a, b) => a.id - b.id);
+                } catch (error) {
+                    console.error('[Drill] Failed to fetch questions:', error);
+                    // 必要に応じてフォールバック（デフォルト問題など）を設定
+                    this.questions = this.questionObjects[0].questions;
+                    // throw error;
+                }
+            })();
+        }
+
+        async setupInitialQuestion () {
+            // API からの取得が終わるまで待機
+            if (this.loadQuestionsPromise) {
+                try {
+                    await this.loadQuestionsPromise;
+                } catch (e) {
+                    // 通信エラー時のアナウンス
+                    // const { judge } = this.getTargets();
+                    // const activeJudge = judge || this.runtime.stage;
+                    // this.runtime.emit('SAY', activeJudge, 'say', 'もんだいの よみこみに しっぱいしました。\nページを さいよみこみ してね！');
+                    // return;
+                }
+            }
+
+            if (!this.questions || this.questions.length === 0) {
+                console.warn('[Drill] No questions available.');
+                return;
+            }
+
+            setTimeout(() => {
+                this.startDrill();
+            }, this.isDev ? 15000: 1000);
         }
 
         codeStart   (args, util) { return true; }
@@ -2944,55 +3024,36 @@
             }
         }
 
-        // 教材IDのフォーマット（例：1201 -> A2-01）
-        formatId (code) {
-            if (!code) return code;
-            const codeAsStr = String(code);
-            if (codeAsStr.length !== 4) return codeAsStr;
+        async startDrill (args) {
+            this.sayFromJudge('ドリル スタート！');
 
-            const map = { '1': 'A', '2': 'B', '3': 'C' };
-            const firstChar = map[codeAsStr[0]] || codeAsStr[0];
+            // ステージにある音声を終わるまで再生
+            const stage = this.runtime.getTargetForStage();
+            if (!stage) return;
+            if (stage.sprite && stage.sprite.sounds) {
+                const startSound = stage.sprite.sounds.find(s => s.name === 'start');
+                const soundBank = stage.sprite.soundBank;
 
-            return `${firstChar}${codeAsStr[1]}-${codeAsStr.slice(2)}`;
-        }
-        
-        isValidQuestionId (args) {
-            const startQuestionId = this.getVariableValueByName('せんたくばんごう');
-            if (!this.questionObjects || this.questionObjects.length === 0) return false;
-            const targetId = parseInt(startQuestionId, 10);
-            // questionObjects の中に、同じ id を持つ問題群があれば true を返す
-            return this.questionObjects.some(qObj => qObj.id === targetId);
-        }
-
-        startDrillWithId (args) {
-            const inputId = this.getVariableValueByName('せんたくばんごう');
-            if (!this.questionObjects || this.questionObjects.length === 0) return;
-            const targetId = parseInt(inputId, 10);
-            const targetIndex = this.questionObjects.findIndex(qObj => qObj.id === targetId);
-            
-            if (targetIndex !== -1) {
-                // 指定idのオブジェクト
-                this.selectedQuestionObj = this.questionObjects[targetIndex];
-            } else {
-                // 最初のオブジェクト
-                this.selectedQuestionObj = this.questionObjects[0]; 
+                if (startSound && soundBank) {
+                    // soundBank.playSound は再生終了まで待機する Promise を返します
+                    await soundBank.playSound(stage, startSound.soundId);
+                }
             }
-
-            this.sayFromJudge(`[${this.formatId(this.selectedQuestionObj.id)}] ${this.selectedQuestionObj.questions.length}もん\nドリル スタート！`);
-            // 3秒後にドリル開始
+            // 2秒後にドリル開始
             setTimeout(() => {
+                this.initializeSprites();
                 this.keepCatInBack();
                 this.currentQuestionIndex = 0;
                 this.askCurrentQuestion();
-            }, 3000);
+            }, 2000);
         }
 
         askCurrentQuestion (args, util) {
-            if (this.currentQuestionIndex >= this.selectedQuestionObj.questions.length) {
+            if (this.currentQuestionIndex >= this.questions.length) {
                 this.clear();
                 return;
             }
-            const q = this.selectedQuestionObj.questions[this.currentQuestionIndex];
+            const q = this.questions[this.currentQuestionIndex];
             this.sayFromJudge(`【だい ${this.currentQuestionIndex + 1} もん】\n${q.title}`);
         }
 
@@ -3282,12 +3343,12 @@
                 return;
             }
 
-            if (this.currentQuestionIndex >= this.selectedQuestionObj.questions.length) {
+            if (this.currentQuestionIndex >= this.questions.length) {
                 this.runtime.emit('SAY', activeJudge, 'say', 'すべての もんだいを\nクリアしています');
                 return;
             }
 
-            const currentQuestion = this.selectedQuestionObj.questions[this.currentQuestionIndex];
+            const currentQuestion = this.questions[this.currentQuestionIndex];
             const blocks = cat.blocks._blocks;
 
             // ハットブロックのIDからブロック系列を取得するヘルパー関数
