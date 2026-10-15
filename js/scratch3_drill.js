@@ -242,10 +242,7 @@
             // 問題リストの定義
             this.questionObjects = [
                 {
-                    id: 100,
-                    category: '基礎',
-                    title: 'キソ その1',
-                    description: '順次実行',
+                    code: '1-1',
                     questions: [
                         {
                             id_old: 1,
@@ -293,10 +290,7 @@
                     ]  
                 },
                 {
-                    id: 101,
-                    category: '基礎',
-                    title: 'キソ その2',
-                    description: '正負の数',
+                    code: '1-2',
                     questions: [
                         {
                             id_old: 3,
@@ -354,10 +348,7 @@
                     ]
                 },
                 {
-                    id: 1,
-                    category: '角度',
-                    title: 'かくど その1',
-                    description: '絶対角度',
+                    code: '2-1',
                     questions: [
                         {
                             id_old: -1,
@@ -404,10 +395,7 @@
                     ]
                 },
                 {
-                    id: 2,
-                    category: '角度',
-                    title: 'かくど その2',
-                    description: '絶対角度',
+                    code: '2-2',
                     questions: [
                         {
                             id_old: -1,
@@ -470,10 +458,7 @@
                     ]
                 },
                 {
-                    id: 1104,
-                    category: '角度',
-                    title: 'かくど その3',
-                    description: '相対角度と絶対角度',
+                    code: '2-3',
                     questions: [
                         {
                             id_old: 6,
@@ -541,10 +526,7 @@
                     ]
                 },
                 {
-                    id: 1105,
-                    category: '座標',
-                    title: 'ざひょう その1',
-                    description: '座標の数値の指定',
+                    code: '3-1',
                     questions: [
                         {
                             id_old: 11,
@@ -596,10 +578,7 @@
                     ]
                 },
                 {
-                    id: 1106,
-                    category: '座標',
-                    title: 'ざひょう その2',
-                    description: '座標の変化量の指定・XYと上下左右の対応',
+                    code: '3-2',
                     questions: [
                         {
                             id_old: 15,
@@ -664,10 +643,7 @@
                     ]
                 },
                 {
-                    id: 1107,
-                    category: '座標',
-                    title: 'ざひょう その3',
-                    description: '座標の変化量の指定・XYと上下左右の対応',
+                    code: '3-3',
                     questions: [
                         {
                             id_old: 18,
@@ -732,10 +708,7 @@
                     ]
                 },
                 {
-                    id: 1108,
-                    category: '繰り返し',
-                    title: 'くりかえし その1',
-                    description: '回数を指定した繰り返し (for)',
+                    code: '4-1',
                     questions: [
                         {
                             id_old: 26,
@@ -824,10 +797,7 @@
                     ]
                 },
                 {
-                    id: 1109,
-                    category: '繰り返し',
-                    title: 'くりかえし その2',
-                    description: '「ずっと」を用いた繰り返し',
+                    code: '4-2',
                     questions: [
                         {
                             id_old: 22,
@@ -892,10 +862,7 @@
                     ]
                 },
                 {
-                    id: 1110,
-                    category: '繰り返し',
-                    title: 'くりかえし その3',
-                    description: '条件を指定した繰り返し (while)',
+                    code: '4-3',
                     questions: [
                         {
                             id_old: 29,
@@ -1013,10 +980,7 @@
                     ]
                 },
                 {
-                    id: 1111,
-                    category: '繰り返し',
-                    title: 'くりかえし その4',
-                    description: '繰り返しの使い分け',
+                    code: '4-4',
                     questions: [
                         {
                             id_old: -1,
@@ -1078,10 +1042,7 @@
                     ]
                 },
                 {
-                    id: 1202,
-                    category: 'メッセージ',
-                    title: 'メッセージ その1',
-                    description: 'メッセージを用いた同期処理と非同期処理',
+                    code: '5-1',
                     questions: [
                         {
                             id_old: -1,
@@ -1147,10 +1108,7 @@
                     ]
                 },
                 {
-                    id: 1203,
-                    category: 'メッセージ',
-                    title: 'メッセージ その2',
-                    description: 'メッセージを用いた複数スプライトの操作',
+                    code: '5-2',
                     questions: [
                         {
                             id_old: 32,
@@ -1209,10 +1167,7 @@
                     ]
                 },
                 {
-                    id: 1205,
-                    category: '条件分岐',
-                    title: 'じょうけんぶんき その1',
-                    description: 'ifによる条件分岐（矢印キーでの上下左右の操作）',
+                    code: '6-1',
                     questions: [
                         {
                             id_old: 36,
@@ -1274,10 +1229,7 @@
                     ]
                 },
                 {
-                    id: 1207,
-                    category: '条件分岐',
-                    title: 'じょうけんぶんき その2',
-                    description: 'if-elseによる条件分岐',
+                    code: '6-2',
                     questions: [
                         {
                             id_old: 38,
@@ -1373,10 +1325,7 @@
                     ]
                 },
                 {
-                    id: 1206,
-                    category: '条件分岐',
-                    title: 'じょうけんぶんき その3',
-                    description: '条件分岐と不等式・OR',
+                    code: '6-3',
                     questions: [
                         {
                             id_old: -1,
@@ -1497,10 +1446,7 @@
                     ]
                 },
                 {
-                    id: 1208,
-                    category: '条件分岐',
-                    title: 'じょうけんぶんき その4',
-                    description: '条件分岐と等式・不等式・AND',
+                    code: '6-4',
                     questions: [
                         {
                             id_old: 43,
@@ -1640,10 +1586,7 @@
                     ]
                 },
                 {
-                    id: 2101,
-                    category: '変数',
-                    title: 'へんすう その1',
-                    description: '変数を用いたカウントダウン機能',
+                    code: '7-1',
                     questions: [
                         {
                             id_old: 46,
@@ -1731,10 +1674,7 @@
                     ]
                 },
                 {
-                    id: 2102,
-                    category: '変数',
-                    title: 'へんすう その2',
-                    description: '変数を用いたカウントダウン機能・変数の値による条件分岐・繰り返し後の処理',
+                    code: '7-2',
                     questions: [
                         {
                             id_old: 48,
@@ -1848,10 +1788,7 @@
                     ]
                 },
                 {
-                    id: 2104,
-                    category: '乱数',
-                    title: 'らんすう その1',
-                    description: '乱数の基礎',
+                    code: '8-1',
                     questions: [
                         {
                             id_old: 51,
@@ -1951,10 +1888,7 @@
                     ]
                 },
                 {
-                    id: 2105,
-                    category: '乱数',
-                    title: 'らんすう その2',
-                    description: '乱数を用いた動きの実装',
+                    code: '8-2',
                     questions: [
                         {
                             id_old: 54,
@@ -2125,10 +2059,7 @@
                     ]
                 },
                 {
-                    id: 200,
-                    category: 'リスト',
-                    title: 'リスト（はいれつ）その1',
-                    description: 'リスト（配列）からの要素の取り出し',
+                    code: '9-1',
                     questions: [
                         {
                             id_old: 56,
@@ -2202,10 +2133,7 @@
                     ]
                 },
                 {
-                    id: 201,
-                    category: 'リスト',
-                    title: 'リスト（はいれつ）その2',
-                    description: 'リスト（配列）の初期化と要素の追加・削除',
+                    code: '9-2',
                     questions: [
                         {
                             id_old: 59,
@@ -2380,10 +2308,7 @@
                     ]
                 },
                 {
-                    id: 300,
-                    category: 'ダイアログ',
-                    title: 'しつもん・こたえ',
-                    description: 'ダイアログの入力の使用',
+                    code: '10-1',
                     questions: [
                         {
                             id_old: -1,
@@ -2508,10 +2433,7 @@
                     ]
                 },
                 {
-                    id: 301,
-                    category: 'ブロック定義',
-                    title: 'ブロックていぎ（かんすう）',
-                    description: 'ブロック定義（関数）による処理のまとめ上げ',
+                    code: '11-1',
                     questions: [
                         {
                             id_old: -1,
@@ -2693,10 +2615,7 @@
                     ]
                 },
                 {
-                    id: 302,
-                    category: '並列処理',
-                    title: 'へいれつ しょり',
-                    description: '一列のプログラムでできない処理を並列処理で実現する',
+                    code: '12-1',
                     questions: [
                         {
                             id_old: -1,
