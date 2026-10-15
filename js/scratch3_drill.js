@@ -3371,54 +3371,51 @@
             const currentQuestion = this.selectedQuestionObj.questions[this.currentQuestionIndex];
             const blocks = cat.blocks._blocks;
 
-            // ハットブロックからブロックの系列を取得するヘルパー関数
-            const getSequenceFromHat = (hatOpcode) => {
-                let hatId = null;
-                for (const id in blocks) {
-                    if (blocks[id].opcode === hatOpcode) {
-                        hatId = id;
-                        break;
-                    }
-                }
-                if (!hatId) return null; // ハットブロック自体が存在しない場合
-
+            // ハットブロックのIDからブロック系列を取得するヘルパー関数
+            const getSequenceFromHatId = (hatId) => {
+                if (!hatId) return [];
                 const sequence = [];
                 let currentId = blocks[hatId].next;
                 while (currentId) {
                     const block = blocks[currentId];
+                    if (!block) break;
                     sequence.push({ opcode: block.opcode, blockId: currentId });
                     currentId = block.next;
                 }
                 return sequence;
             };
 
-            const userSequence1 = getSequenceFromHat('drill_codeStart');
-            const userSequence2 = getSequenceFromHat('drill_codeStart_2');
+            // 各ハットブロックの配置されているIDをすべて取得
+            const hat1Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart');
+            const hat2Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart_2');
 
-            // どちらのハットブロックも置かれていない場合
-            if (userSequence1 === null && userSequence2 === null) {
+            if (hat1Ids.length === 0 && hat2Ids.length === 0) {
+                // 1. どちらも置かれていない場合
                 this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、\nそのしたにプログラムを つくってね！');
-                return;
-            }
-
-            // 評価（片方をメイン、他方をサブのシーケンスとして扱う）
-            const seq1 = userSequence1 || [];
-            const seq2 = userSequence2 || [];
-            const isCorrect = currentQuestion.validate(seq1, seq2, blocks)
-                           || currentQuestion.validate(seq2, seq1, blocks);
-
-            if (isCorrect) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
-                activeJudge.setCostume(1);
-                if (correctSound && soundBank) {
-                    await soundBank.playSound(activeJudge, correctSound.soundId);
-                } 
-                this.currentQuestionIndex++;
+            } else if (hat1Ids.length > 1 || hat2Ids.length > 1) {
+                // 2. 同じハットブロックが2つ以上置かれている場合
+                this.runtime.emit('SAY', activeJudge, 'say', 'おなじ「ここから かきはじめる」ブロックが\n2つ以上 あるよ！ 1つにしてね！');
             } else {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
-                activeJudge.setCostume(2);
-                if (wrongSound && soundBank) {
-                    await soundBank.playSound(activeJudge, wrongSound.soundId);
+                // 3. 正常系（1が1つ / 2が1つ / どちらも1つずつ）
+                // 評価（片方をメイン、他方をサブのシーケンスとして扱う）
+                const seq1 = getSequenceFromHatId(hat1Ids[0]);
+                const seq2 = getSequenceFromHatId(hat2Ids[0]);
+                const isCorrect = currentQuestion.validate(seq1, seq2, blocks)
+                               || currentQuestion.validate(seq2, seq1, blocks);
+                
+                if (isCorrect) {
+                    this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
+                    activeJudge.setCostume(1);
+                    if (correctSound && soundBank) {
+                        await soundBank.playSound(activeJudge, correctSound.soundId);
+                    } 
+                    this.currentQuestionIndex++;
+                } else {
+                    this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
+                    activeJudge.setCostume(2);
+                    if (wrongSound && soundBank) {
+                        await soundBank.playSound(activeJudge, wrongSound.soundId);
+                    }
                 }
             }
                 
