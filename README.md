@@ -20,7 +20,7 @@ Scratchの理解度向上のためのドリル教材
 ## API認証
 - APIへ初めて接続するときに認証キーの入力画面が表示される。
 - 入力したキーは、TurboWarpを開いているブラウザの `localStorage` に `scratchDrill.apiKey` という名前で保存される。2回目以降は保存済みのキーが自動的に使われる。
-- APIリクエストには `Authorization: Bearer <認証キー>` が付与される。API側が別の方式を使う場合は、`js/scratch3_drill.js` 冒頭の `API_KEY_HEADER` と `API_KEY_PREFIX` を変更する。
+- APIリクエストには `X-LeON-Api-Key: <認証キー>` が付与される。
 - APIが `401` または `403` を返した場合は保存済みのキーが削除される。ページを再読み込みすると新しいキーを入力できる。
 - `localStorage` の内容は同じオリジンで動くJavaScriptから読み取れるため、第三者と共有する管理者用の秘密鍵ではなく、この用途専用の失効可能なキーを使う。
 

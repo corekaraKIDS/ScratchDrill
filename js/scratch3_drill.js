@@ -19,8 +19,8 @@
     // APIキーはJavaScriptへ直接書かず、TurboWarpを開いているブラウザに保存する。
     // API側が別の認証方式を使う場合は、以下のヘッダー名と接頭辞を変更する。
     const API_KEY_STORAGE_KEY = 'scratchDrill.apiKey';
-    const API_KEY_HEADER = 'Authorization';
-    const API_KEY_PREFIX = 'Bearer ';
+    const API_KEY_HEADER = 'X-LeON-Api-Key';
+    const API_KEY_PREFIX = '';
     const BASE_URL = 'https://le-on-assist.online'; // APIサーバーのドメイン
 
     // ドリルの正誤判定で使う機能をまとめたクラス
