@@ -14,6 +14,13 @@
 
     const runtime = Scratch.vm.runtime;
 
+    // APIキーはJavaScriptへ直接書かず、TurboWarpを開いているブラウザに保存する。
+    // API側が別の認証方式を使う場合は、以下のヘッダー名と接頭辞を変更する。
+    const API_KEY_STORAGE_KEY = 'scratchDrill.apiKey';
+    const API_KEY_HEADER = 'Authorization';
+    const API_KEY_PREFIX = 'Bearer ';
+    const BASE_URL = 'https://le-on-assist.online'; // APIサーバーのドメイン
+
     // ドリルの正誤判定で使う機能をまとめたクラス
     class DrillValidators {
         /**
@@ -297,6 +304,70 @@
             return new URLSearchParams(loc.search).get(key);
         }
 
+        getStoredApiKey () {
+            if (this.apiKey) return this.apiKey;
+
+            try {
+                const storedKey = window.localStorage.getItem(API_KEY_STORAGE_KEY);
+                this.apiKey = storedKey ? storedKey.trim() : '';
+            } catch (error) {
+                console.warn('[Drill] API key could not be read from localStorage:', error);
+                this.apiKey = '';
+            }
+
+            return this.apiKey;
+        }
+
+        getOrPromptApiKey () {
+            const storedKey = this.getStoredApiKey();
+            if (storedKey) return storedKey;
+
+            const enteredKey = window.prompt('ドリルAPIの認証キーを入力してください。\nこのブラウザに保存されます。');
+            if (enteredKey === null || !enteredKey.trim()) return null;
+
+            this.apiKey = enteredKey.trim();
+            try {
+                window.localStorage.setItem(API_KEY_STORAGE_KEY, this.apiKey);
+            } catch (error) {
+                // localStorageが無効でも、現在のページを開いている間はメモリ上のキーを使える。
+                console.warn('[Drill] API key could not be saved to localStorage:', error);
+            }
+
+            return this.apiKey;
+        }
+
+        clearStoredApiKey () {
+            this.apiKey = '';
+            try {
+                window.localStorage.removeItem(API_KEY_STORAGE_KEY);
+            } catch (error) {
+                console.warn('[Drill] API key could not be removed from localStorage:', error);
+            }
+        }
+
+        async apiFetch (url, options = {}) {
+            const apiKey = this.getOrPromptApiKey();
+            if (!apiKey) {
+                throw new Error('API key is not configured.');
+            }
+
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                    [API_KEY_HEADER]: `${API_KEY_PREFIX}${apiKey}`
+                }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                // 無効になったキーを次回も使い続けないようにする。
+                this.clearStoredApiKey();
+                throw new Error(`Authentication failed! status: ${response.status}`);
+            }
+
+            return response;
+        }
+
         async initFromQueryParams () {
             this.studentId = this.getQueryParam('studentId');
             this.drillSetCode = this.getQueryParam('code');
@@ -317,10 +388,9 @@
             this.loadQuestionsPromise = (async () => {
                 try {
                     // APIエンドポイントのURL
-                    const BASE_URL = 'https://your-domain.com'; // APIサーバーのドメイン！！！
                     const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(this.drillSetCode)}/questions`;
 
-                    const response = await fetch(apiUrl, {
+                    const response = await this.apiFetch(apiUrl, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
@@ -701,7 +771,6 @@
             this.sayFromJudge("けっかを そうしんちゅう");
             
             // 結果送信データの作成
-            const BASE_URL = 'https://your-domain.com'; // APIサーバーのドメイン！！！
             const apiUrl = `${BASE_URL}/api/external/drill-set-attempts`;
 
             const payload = {
@@ -713,7 +782,7 @@
 
             // 結果のPOST送信
             try {
-                const response = await fetch(apiUrl, {
+                const response = await this.apiFetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
