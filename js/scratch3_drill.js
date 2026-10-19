@@ -13,6 +13,8 @@
     }
 
     const runtime = Scratch.vm.runtime;
+    const PUBLISHED_IFRAME_PAGE_BASE_URL = 'https://corekarakids.github.io/ScratchDrill/iframe_page/';
+    const DEV_IFRAME_PAGE_BASE_URL = 'http://localhost:5500/iframe_page/';
 
     // APIキーはJavaScriptへ直接書かず、TurboWarpを開いているブラウザに保存する。
     // API側が別の認証方式を使う場合は、以下のヘッダー名と接頭辞を変更する。
@@ -243,19 +245,18 @@
         constructor (runtime) {
             this.runtime = runtime;
             this.currentQuestionIndex = 0;
+            this.questions = [];
+            this.results = [];
+            const projectIsLoaded = this.runtime.targets && this.runtime.targets.length > 1;
+            this.projectLoadedPromise = projectIsLoaded
+                ? Promise.resolve()
+                : new Promise(resolve => this.runtime.once('PROJECT_LOADED', resolve));
 
             // 1. URLパラメータの取得はロード時に勝手に行われる
             this.initFromQueryParams();
 
-            // 2. すでにターゲット（ステージやスプライト）が読み込まれていれば即実行、まだならイベントを待つ
-            const isAlreadyLoaded = this.runtime.targets && this.runtime.targets.length > 1;
-            if (isAlreadyLoaded) {
-                this.setupInitialQuestion();
-            } else {
-                this.runtime.once('PROJECT_LOADED', () => {
-                    this.setupInitialQuestion();
-                });
-            }
+            // 2. ドリルセット選択
+            this.showStartScreen();
         }
 
         // ブロックの定義
@@ -369,107 +370,196 @@
         }
 
         async initFromQueryParams () {
-            this.studentId = this.getQueryParam('studentId');
-            this.drillSetCode = this.getQueryParam('code');
-            this.isDev = this.getQueryParam('dev');
+            const studentIdParam = this.getQueryParam('studentId');
+            this.studentId = /^\d+$/.test(studentIdParam || '')
+                ? Number(studentIdParam)
+                : null;
+            this.studentName = (
+                this.getQueryParam('studentName') || this.getQueryParam('student_name') || ''
+            ).trim() || null;
+            const devParam = this.getQueryParam('dev');
+            this.isDev = devParam !== null && !['false', '0'].includes(devParam.toLowerCase());
+            this.devIframePageBaseUrl = this.getQueryParam('devIframeBaseUrl') || DEV_IFRAME_PAGE_BASE_URL;
 
-            console.log('Loaded student id:', this.studentId, 'and drill set code:', this.drillSetCode);
-            if (this.isDev) console.log('DEV MODE');
+            console.log('Loaded student:', this.studentName, '(ID:', this.studentId, ')');
+            if (this.isDev) console.log('DEV MODE - iframe pages:', this.devIframePageBaseUrl);
+        }
 
-            // code パラメータが指定されていない場合のガード
-            if (!this.drillSetCode || !this.studentId) {
-                if (!this.drillSetCode) console.error('[Drill] drillSetCode (code parameter) is missing in URL.');
-                if (!this.studentId) console.error('[Drill] student ID is missing in URL.');
-                this.sayFromJudge('この リンクでは ドリルが できません。');
-                return;
+        getIframePageUrl (fileName) {
+            const baseUrl = this.isDev
+                ? this.devIframePageBaseUrl
+                : PUBLISHED_IFRAME_PAGE_BASE_URL;
+            const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+            return new URL(fileName, normalizedBaseUrl).href;
+        }
+
+        getApiHeaders (hasBody = false) {
+            const headers = {
+                'Accept': 'application/json'
+            };
+
+            if (hasBody) headers['Content-Type'] = 'application/json';
+            return headers;
+        }
+
+        async fetchJson (url, options = {}) {
+            const response = await this.apiFetch(url, options);
+            if (!response.ok) {
+                let message = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData?.message) message = errorData.message;
+                } catch (error) {
+                    // JSONでないエラーレスポンスではHTTPステータスを使用する
+                }
+                throw new Error(message);
+            }
+            return response.json();
+        }
+
+        async loadDrillMenuData () {
+            if (!this.studentId) {
+                throw new Error('URLに生徒ID（studentId）がありません。');
             }
 
-            // 非同期ロード処理を Promise として保持（他メソッドから await できるようにする）
-            this.loadQuestionsPromise = (async () => {
-                try {
-                    // APIエンドポイントのURL
-                    const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(this.drillSetCode)}/questions`;
+            const progressUrl = `${BASE_URL}/api/external/drill-progress?student_id=${encodeURIComponent(this.studentId)}`;
+            const [drillSetData, progressData] = await Promise.all([
+                this.fetchJson(`${BASE_URL}/api/external/drill-sets`, {
+                    method: 'GET',
+                    headers: this.getApiHeaders()
+                }),
+                this.fetchJson(progressUrl, {
+                    method: 'GET',
+                    headers: this.getApiHeaders()
+                })
+            ]);
 
-                    const response = await this.apiFetch(apiUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
+            this.availableDrillSets = Array.isArray(drillSetData.drill_sets)
+                ? drillSetData.drill_sets
+                : [];
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+            return {
+                student_id: this.studentId,
+                student_name: this.studentName,
+                drill_sets: this.availableDrillSets,
+                attempts: Array.isArray(progressData.attempts) ? progressData.attempts : []
+            };
+        }
 
-                    // 取得した問題オブジェクトをセット
-                    const data = await response.json();
+        showStartScreen () {
+            if (typeof document === 'undefined') return;
 
-                    this.drillSetId = data.drill_set_id;
-                    this.questions = Object.values(data.questions)
-                        .sort((a, b) => a.id - b.id);
-                } catch (error) {
-                    console.error('[Drill] Failed to fetch questions:', error);
-                    // 必要に応じてフォールバック（デフォルト問題など）を設定
-                    this.questions = [
-                        {
-                            "id": 1,
-                            "drill_set_id": 1,
-                            "question": { 
-                                text: 'ネコを 100ほ うごかそう！',
-                                validate: (mainSequence, subSequence, allBlocks) => {
-                                    if (mainSequence.length !== 1) return false;
-                                    if (subSequence.length !== 0) return false;
-                                    const [first] = mainSequence;
-                                    if (first.opcode !== 'motion_movesteps') return false;
-                                    return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '100';
-                                } 
-                            },
-                            "is_active": true
-                        },
-                        {
-                            "id": 2,
-                            "drill_set_id": 1,
-                            "question": { 
-                                text: 'ネコを 200ほ うごかそう！',
-                                validate: (mainSequence, subSequence, allBlocks) => {
-                                    if (mainSequence.length !== 1) return false;
-                                    if (subSequence.length !== 0) return false;
-                                    const [first] = mainSequence;
-                                    if (first.opcode !== 'motion_movesteps') return false;
-                                    return String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) === '200';
-                                } 
-                            },
-                            "is_active": true
-                        },
-                        {
-                            "id": 3,
-                            "drill_set_id": 1,
-                            "question": { 
-                                text: 'ネコを 100ほ うごかして、\n1びょう まってから\nもういちど 100ほ うごかそう！',
-                                validate: (mainSequence, subSequence, allBlocks) => {
-                                // 3つのブロックが並んでいるかチェック
-                                if (mainSequence.length !== 3) return false;
-                                if (subSequence.length !== 0) return false;
-                                const [first, second, third] = mainSequence;
-                                
-                                if (first.opcode !== 'motion_movesteps') return false;
-                                if (String(DrillValidators.getInputValue(allBlocks[first.blockId], 'STEPS', allBlocks)) !== '100') return false;
+            const oldFrame = document.getElementById('scratch3-drill-start-screen');
+            if (oldFrame) oldFrame.remove();
 
-                                if (second.opcode !== 'control_wait') return false;
-                                if (String(DrillValidators.getInputValue(allBlocks[second.blockId], 'DURATION', allBlocks)) !== '1') return false;
+            if (this._startScreenMessageHandler) {
+                window.removeEventListener('message', this._startScreenMessageHandler);
+            }
 
-                                if (third.opcode !== 'motion_movesteps') return false;
-                                if (String(DrillValidators.getInputValue(allBlocks[third.blockId], 'STEPS', allBlocks)) !== '100') return false;
+            const frame = document.createElement('iframe');
+            frame.id = 'scratch3-drill-start-screen';
+            frame.title = 'ドリルをえらぶ';
+            frame.src = this.getIframePageUrl('start.html');
+            const iframePageOrigin = new URL(frame.src).origin;
+            Object.assign(frame.style, {
+                position: 'fixed',
+                inset: '0',
+                width: '100vw',
+                height: '100vh',
+                border: '0',
+                background: '#eef9ff',
+                zIndex: '2147483647'
+            });
 
-                                return true;
-                            } 
-                            },
-                            "is_active": true
-                        }
-                    ]
-                    // throw error;
+            let frameLoaded = false;
+            let menuMessage = null;
+            const sendMenuMessage = () => {
+                if (!frameLoaded || !menuMessage || !frame.contentWindow) return;
+                frame.contentWindow.postMessage(menuMessage, iframePageOrigin);
+            };
+
+            frame.addEventListener('load', () => {
+                frameLoaded = true;
+                sendMenuMessage();
+            }, { once: true });
+
+            this._startScreenMessageHandler = (event) => {
+                if (event.origin !== iframePageOrigin || event.source !== frame.contentWindow) return;
+                if (event.data?.type !== 'scratch3-drill-select') return;
+
+                const selected = this.availableDrillSets?.find(
+                    drillSet => drillSet.code === event.data.drill_set_code
+                );
+                if (!selected) return;
+
+                this.selectDrill(selected, frame);
+            };
+            window.addEventListener('message', this._startScreenMessageHandler);
+            document.body.appendChild(frame);
+
+            this.loadDrillMenuData()
+                .then(payload => {
+                    menuMessage = { type: 'scratch3-drill-menu', payload };
+                    sendMenuMessage();
+                })
+                .catch(error => {
+                    console.error('[Drill] Failed to load drill menu:', error);
+                    menuMessage = {
+                        type: 'scratch3-drill-menu-error',
+                        message: error.message || 'ドリルの一覧を読み込めませんでした。'
+                    };
+                    sendMenuMessage();
+                });
+        }
+
+        closeStartScreen (frame) {
+            if (this._startScreenMessageHandler) {
+                window.removeEventListener('message', this._startScreenMessageHandler);
+                this._startScreenMessageHandler = null;
+            }
+            frame?.remove();
+        }
+
+        async selectDrill (drillSet, frame) {
+            if (this._isStartingDrill) return;
+            this._isStartingDrill = true;
+
+            this.drillSetCode = drillSet.code;
+            this.drillSetId = drillSet.id;
+            this.drillSetTitle = drillSet.title;
+
+            try {
+                this.loadQuestionsPromise = this.loadQuestions(this.drillSetCode);
+                await Promise.all([this.loadQuestionsPromise, this.projectLoadedPromise]);
+
+                if (!this.questions.length) {
+                    throw new Error('このドリルには、取り組める問題がありません。');
                 }
-            })();
+
+                this.closeStartScreen(frame);
+                this.setupInitialQuestion();
+            } catch (error) {
+                console.error('[Drill] Failed to start selected drill:', error);
+                frame.contentWindow?.postMessage({
+                    type: 'scratch3-drill-start-error',
+                    message: error.message || 'ドリルを始められませんでした。'
+                }, new URL(frame.src).origin);
+            } finally {
+                this._isStartingDrill = false;
+            }
+        }
+
+        async loadQuestions (drillSetCode) {
+            const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;
+            const data = await this.fetchJson(apiUrl, {
+                method: 'GET',
+                headers: this.getApiHeaders()
+            });
+
+            this.drillSetId = data.drill_set?.id ?? this.drillSetId;
+            this.drillSetTitle = data.drill_set?.title ?? this.drillSetTitle;
+            this.questions = Object.values(data.questions || {})
+                .sort((a, b) => a.id - b.id);
         }
 
         async setupInitialQuestion () {
@@ -763,7 +853,7 @@
             }, 2500);
         }
 
-        async clear () {            
+        async finish () {
             // 裏で走るタイマーを止める
             this.stopCatBack();
             this.stopVarCheck();
@@ -784,9 +874,7 @@
             try {
                 const response = await this.apiFetch(apiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: this.getApiHeaders(true),
                     body: JSON.stringify(payload)
                 });
 
@@ -821,11 +909,53 @@
                     soundBank.playSound(stage, clearSound.soundId);
                 }
             }
+
+            this.showFinishScreen();
+        }
+
+        showFinishScreen () {
+            if (typeof document === 'undefined') return;
+
+            const oldFrame = document.getElementById('scratch3-drill-finish-screen');
+            if (oldFrame) oldFrame.remove();
+
+            const frame = document.createElement('iframe');
+            frame.id = 'scratch3-drill-finish-screen';
+            frame.title = 'けっか';
+            frame.src = this.getIframePageUrl('finish.html');
+            const iframePageOrigin = new URL(frame.src).origin;
+            frame.setAttribute('allow', 'fullscreen');
+            Object.assign(frame.style, {
+                position: 'fixed',
+                inset: '0',
+                width: '100vw',
+                height: '100vh',
+                border: '0',
+                background: '#fff8e8',
+                zIndex: '2147483647'
+            });
+
+            frame.addEventListener('load', () => {
+                const payload = {
+                    student_id: this.studentId,
+                    student_name: this.studentName,
+                    drill_set_id: this.drillSetId,
+                    results: Array.isArray(this.results) ? this.results : [],
+                    drill_set_title: this.drillSetTitle
+                };
+
+                frame.contentWindow?.postMessage({
+                    type: 'scratch3-drill-results',
+                    payload
+                }, iframePageOrigin);
+            }, { once: true });
+
+            document.body.appendChild(frame);
         }
 
         askCurrentQuestion (args, util) {
             if (this.currentQuestionIndex >= this.questions.length) {
-                this.clear();
+                this.finish();
                 return;
             }
             const q = this.questions[this.currentQuestionIndex].question;
