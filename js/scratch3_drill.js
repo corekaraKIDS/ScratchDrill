@@ -432,6 +432,337 @@
         codeStart   (args, util) { return true; }
         codeStart_2 (args, util) { return true; }
 
+        async startDrill (args) {
+            this.sayFromJudge('ドリル スタート！');
+            this.results = []; // 各問の結果を格納する送信用データ
+
+            // ステージにある音声を終わるまで再生
+            const stage = this.runtime.getTargetForStage();
+            if (stage && stage.sprite && stage.sprite.sounds) {
+                const startSound = stage.sprite.sounds.find(s => s.name === 'start');
+                const soundBank = stage.sprite.soundBank;
+
+                if (startSound && soundBank) {
+                    // soundBank.playSound は再生終了まで待機する Promise を返します
+                    await soundBank.playSound(stage, startSound.soundId);
+                }
+            }
+            // 2秒後にドリル開始
+            setTimeout(() => {
+                this.initializeSprites();
+                this.keepCatInBack();
+                this.currentQuestionIndex = 0;
+                this.askCurrentQuestion();
+            }, 2000);
+        }
+        
+        handleTestRun (args, util) {
+            const { playButton } = this.getTargets();
+            if (!playButton) {
+                console.log('テストランボタンが見つかりません');
+                return;
+            }
+
+            // 最初のコスチューム（0）ならテスト実行、それ以外なら停止
+            if (playButton.currentCostume === 0) {
+                this.doTestRun(args, util);
+            } else {
+                this.stopTestRun(args, util);
+            }
+        }
+
+        doTestRun (args, util) {
+            const { cat, playButton } = this.getTargets();
+
+            if (cat) {
+                // 1. スプライトと変数を初期化
+                this.initializeSprites();
+
+                // 2.1. 監視したい変数名を配列で指定
+                const targetVars = ['のこりじかん', 'ランダム'];
+                const pendingVars = new Set(targetVars);
+
+                // 2.2. 前回の変数監視タイマーが残っていればクリア
+                this.stopVarCheck();
+
+                // 2.3. 100msごとに変数を監視
+                this._varCheckInterval = setInterval(() => {
+                    pendingVars.forEach(varName => {
+                        const val = this.getVariableValueByName(varName);
+                        // console.log(`Now ${varName} is `, val);
+
+                        // 初期値(-1)以外に変更されたら表示し、監視対象から外す
+                        if (val !== null && val !== -1 && val !== '-1') {
+                            this.setVariableVisible(varName, true);
+                            pendingVars.delete(varName);
+                        }
+                    });
+
+                    // すべての変数が変更・表示されたら監視終了
+                    if (pendingVars.size === 0) {
+                        this.stopVarCheck();
+                    }
+                }, 100);
+
+                // 3. 掛け声演出とハットブロックの起動処理
+                this.sayFromJudge('');
+                this.runtime.emit('SAY', playButton, 'say', 'いくよ！せーの');
+
+                if (this._testRunTimeout) clearTimeout(this._testRunTimeout);
+                this._testRunTimeout = setTimeout(() => {
+                    this.runtime.emit('SAY', playButton, 'say', '');
+                    playButton.setCostume(1);
+                    this.runtime.startHats('drill_codeStart', null, cat);
+                    this.runtime.startHats('drill_codeStart_2', null, cat);
+                }, 1500);
+            }
+        }
+
+        stopTestRun (args, util) {
+            const { playButton } = this.getTargets();
+
+            // コスチュームを 0（再生アイコン）へ戻す
+            if (playButton) {
+                playButton.setCostume(0);
+                this.runtime.emit('SAY', playButton, 'say', '');
+            }
+            // 「せーの」のタイマー停止
+            if (this._testRunTimeout) {
+                clearTimeout(this._testRunTimeout);
+                this._testRunTimeout = null;
+            }
+
+            this.stopVarCheck();
+            this.initializeSprites();
+
+            // 問題文の再掲
+            this.askCurrentQuestion();
+        }
+
+        /**
+         * パスボタンの状態・タイマーを初期状態（コスチューム 0）にリセット
+         */
+        resetPassState () {
+            // 5秒タイマーの解除
+            if (this._passTimer) {
+                clearTimeout(this._passTimer);
+                this._passTimer = null;
+            }
+
+            this.initializeSprites();
+        }
+
+        /**
+         * パスボタンがクリックされた時のハンドラー
+         */
+        handlePassClick (args, util) {
+            const { passButton } = this.getTargets();
+            const activePassButton = passButton || util.target;
+            if (!activePassButton) return;
+
+            // ----------------------------------------------------
+            // 1回目クリック：通常ボタン（コスチューム 0）のとき
+            // ----------------------------------------------------
+            if (activePassButton.currentCostume === 0) {
+                // コスチューム 1（確認メッセージ）へ切り替え
+                activePassButton.setCostume(1);
+                activePassButton.setXY(0, 0);
+                activePassButton.goToFront();
+
+                // 5秒間何もしなければ自動で元に戻す
+                if (this._passTimer) clearTimeout(this._passTimer);
+                this._passTimer = setTimeout(() => {
+                    this.resetPassState();
+                }, 5000);
+
+                return;
+            }
+
+            // ----------------------------------------------------
+            // 2回目クリック：確認メッセージ（コスチューム 1）のとき
+            // ----------------------------------------------------
+            if (activePassButton.currentCostume === 1) {
+                // タイマー解除＆コスチュームを 0 に戻す
+                this.resetPassState();
+
+                // パス確定処理（次の問題へ進む）
+                this.executePass();
+            }
+        }
+
+        /**
+         * パス実行時の処理
+         */
+        async executePass () {
+            const { judge } = this.getTargets();
+            const activeJudge = judge || util.target;
+            const soundBank = activeJudge?.sprite?.soundBank;
+            const sounds = activeJudge?.sprite?.sounds || [];
+            const passSound = sounds.find(s => s.name === 'pass');
+
+            this.sayFromJudge('またこんど せいかい できるように がんばろう！');
+            this.results.push({ "drill_question_id": this.questions[this.currentQuestionIndex].id, "is_correct": false })
+
+            if (passSound && soundBank) {
+                soundBank.playSound(activeJudge, passSound.soundId);
+            } 
+            setTimeout(() => {
+                this.currentQuestionIndex++;
+                this.initializeSprites();
+                this.askCurrentQuestion();
+            }, 2500);
+        }
+        
+        async checkAnswer (args, util) {
+            const { cat, judge } = this.getTargets();
+            const activeJudge = judge || util.target;
+
+            this.stopVarCheck();
+            
+            // activeJudge.sprite から sounds と soundBank を取得
+            const sounds = activeJudge?.sprite?.sounds || [];
+            const correctSound = sounds.find(s => s.name === 'correct');
+            const wrongSound = sounds.find(s => s.name === 'wrong');
+            const soundBank = activeJudge?.sprite?.soundBank;
+
+            if (!cat) {
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが\nみつかりません');
+                return;
+            }
+
+            if (this.currentQuestionIndex >= this.questions.length) {
+                this.runtime.emit('SAY', activeJudge, 'say', 'すべての もんだいを\nクリアしています');
+                return;
+            }
+
+            const currentQuestionObj = this.questions[this.currentQuestionIndex];
+            const blocks = cat.blocks._blocks;
+
+            // ハットブロックのIDからブロック系列を取得するヘルパー関数
+            const getSequenceFromHatId = (hatId) => {
+                if (!hatId) return [];
+                const sequence = [];
+                let currentId = blocks[hatId].next;
+                while (currentId) {
+                    const block = blocks[currentId];
+                    if (!block) break;
+                    sequence.push({ opcode: block.opcode, blockId: currentId });
+                    currentId = block.next;
+                }
+                return sequence;
+            };
+
+            // 各ハットブロックの配置されているIDをすべて取得
+            const hat1Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart');
+            const hat2Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart_2');
+
+            if (hat1Ids.length === 0 && hat2Ids.length === 0) {
+                // 1. どちらも置かれていない場合
+                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、\nそのしたにプログラムを つくってね！');
+            } else if (hat1Ids.length > 1 || hat2Ids.length > 1) {
+                // 2. 同じハットブロックが2つ以上置かれている場合
+                this.runtime.emit('SAY', activeJudge, 'say', 'おなじ「ここから かきはじめる」ブロックが\n2つ以上 あるよ！ 1つにしてね！');
+            } else {
+                // 3. 正常系（1が1つ / 2が1つ / どちらも1つずつ）
+                // 評価（片方をメイン、他方をサブのシーケンスとして扱う）
+                const seq1 = getSequenceFromHatId(hat1Ids[0]);
+                const seq2 = getSequenceFromHatId(hat2Ids[0]);
+                const isCorrect = currentQuestionObj.question.validate(seq1, seq2, blocks)
+                               || currentQuestionObj.question.validate(seq2, seq1, blocks);
+                
+                if (isCorrect) {
+                    this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
+                    this.results.push({ "drill_question_id": currentQuestionObj.id, "is_correct": true });
+                    activeJudge.setCostume(1);
+                    if (correctSound && soundBank) {
+                        soundBank.playSound(activeJudge, correctSound.soundId);
+                    } 
+                    this.currentQuestionIndex++;
+                } else {
+                    this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
+                    activeJudge.setCostume(2);
+                    if (wrongSound && soundBank) {
+                        soundBank.playSound(activeJudge, wrongSound.soundId);
+                    }
+                }
+            }
+                
+            setTimeout(() => {
+                this.initializeSprites();
+                this.askCurrentQuestion();
+            }, 2500);
+        }
+
+        async clear () {            
+            // 裏で走るタイマーを止める
+            this.stopCatBack();
+            this.stopVarCheck();
+
+            this.sayFromJudge("けっかを そうしんちゅう");
+            
+            // 結果送信データの作成
+            const BASE_URL = 'https://your-domain.com'; // APIサーバーのドメイン！！！
+            const apiUrl = `${BASE_URL}/api/external/drill-set-attempts`;
+
+            const payload = {
+                student_id: this.studentId,
+                drill_set_id: this.drillSetId,
+                results: this.results
+            };
+            console.log("JSON to post:", JSON.stringify(payload));
+
+            // 結果のPOST送信
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const resData = await response.json();
+                console.log('[Drill] Attempt posted successfully:', resData);
+
+            } catch (error) {
+                console.error('[Drill] Failed to post drill set attempt:', error);
+            }
+
+            // 背景を 'clear' に切り替える
+            const stage = this.runtime.getTargetForStage();
+            if (!stage) console.error("Stage is not found.");
+
+            const costumes = stage.getCostumes();
+            const clearIndex = costumes.findIndex(c => c.name === 'clear');
+            if (clearIndex !== -1) {
+                stage.setCostume(clearIndex);
+            }
+            
+            // ステージにある音声を再生
+            if (stage.sprite && stage.sprite.sounds) {
+                const clearSound = stage.sprite.sounds.find(s => s.name === 'clear');
+                const soundBank = stage.sprite.soundBank;
+                
+                if (clearSound && soundBank) {
+                    // soundBank.playSound は再生終了まで待機する Promise を返します
+                    soundBank.playSound(stage, clearSound.soundId);
+                }
+            }
+        }
+
+        askCurrentQuestion (args, util) {
+            if (this.currentQuestionIndex >= this.questions.length) {
+                this.clear();
+                return;
+            }
+            const q = this.questions[this.currentQuestionIndex].question;
+            this.sayFromJudge(`【だい ${this.currentQuestionIndex + 1} もん】\n${q.text}`);
+        }
+
         // 3つのスプライト（審査員、再生ボタン、ネコ）を自動識別
         getTargets (args, util) {
             let judge = null;
@@ -518,174 +849,6 @@
             }
         }
 
-        async startDrill (args) {
-            this.sayFromJudge('ドリル スタート！');
-            this.results = []; // 各問の結果を格納する送信用データ
-
-            // ステージにある音声を終わるまで再生
-            const stage = this.runtime.getTargetForStage();
-            if (stage && stage.sprite && stage.sprite.sounds) {
-                const startSound = stage.sprite.sounds.find(s => s.name === 'start');
-                const soundBank = stage.sprite.soundBank;
-
-                if (startSound && soundBank) {
-                    // soundBank.playSound は再生終了まで待機する Promise を返します
-                    await soundBank.playSound(stage, startSound.soundId);
-                }
-            }
-            // 2秒後にドリル開始
-            setTimeout(() => {
-                this.initializeSprites();
-                this.keepCatInBack();
-                this.currentQuestionIndex = 0;
-                this.askCurrentQuestion();
-            }, 2000);
-        }
-
-        askCurrentQuestion (args, util) {
-            if (this.currentQuestionIndex >= this.questions.length) {
-                this.clear();
-                return;
-            }
-            const q = this.questions[this.currentQuestionIndex].question;
-            this.sayFromJudge(`【だい ${this.currentQuestionIndex + 1} もん】\n${q.text}`);
-        }
-
-        async clear () {
-            const stage = this.runtime.getTargetForStage();
-            if (!stage) console.error("Stage is not found.");
-
-            // 1. 背景を 'clear' に切り替える
-            const costumes = stage.getCostumes();
-            const clearIndex = costumes.findIndex(c => c.name === 'clear');
-            if (clearIndex !== -1) {
-                stage.setCostume(clearIndex);
-            }
-
-            this.sayFromJudge("おつかれさま！");
-
-            // 2. ステージにある音声を再生
-            if (stage.sprite && stage.sprite.sounds) {
-                const clearSound = stage.sprite.sounds.find(s => s.name === 'clear');
-                const soundBank = stage.sprite.soundBank;
-
-                if (clearSound && soundBank) {
-                    // soundBank.playSound は再生終了まで待機する Promise を返します
-                    soundBank.playSound(stage, clearSound.soundId);
-                }
-            }
-
-            // 3. 裏で走るタイマーを止める
-            this.stopCatBack();
-            this.stopVarCheck();
-            
-            // 2. 結果送信データの作成
-            const BASE_URL = 'https://your-domain.com'; // APIサーバーのドメイン！！！
-            const apiUrl = `${BASE_URL}/api/external/drill-set-attempts`;
-
-            const payload = {
-                student_id: this.studentId,
-                drill_set_id: this.drillSetId,
-                results: this.results
-            };
-            console.log("JSON to post:", JSON.stringify(payload));
-
-            // 3. 結果のPOST送信
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const resData = await response.json();
-                console.log('[Drill] Attempt posted successfully:', resData);
-
-            } catch (error) {
-                console.error('[Drill] Failed to post drill set attempt:', error);
-            }
-        }
-
-        /**
-         * パスボタンの状態・タイマーを初期状態（コスチューム 0）にリセット
-         */
-        resetPassState () {
-            // 5秒タイマーの解除
-            if (this._passTimer) {
-                clearTimeout(this._passTimer);
-                this._passTimer = null;
-            }
-
-            this.initializeSprites();
-        }
-
-        /**
-         * パスボタンがクリックされた時のハンドラー
-         */
-        handlePassClick (args, util) {
-            const { passButton } = this.getTargets();
-            const activePassButton = passButton || util.target;
-            if (!activePassButton) return;
-
-            // ----------------------------------------------------
-            // 1回目クリック：通常ボタン（コスチューム 0）のとき
-            // ----------------------------------------------------
-            if (activePassButton.currentCostume === 0) {
-                // コスチューム 1（確認メッセージ）へ切り替え
-                activePassButton.setCostume(1);
-                activePassButton.setXY(0, 0);
-                activePassButton.goToFront();
-
-                // 5秒間何もしなければ自動で元に戻す
-                if (this._passTimer) clearTimeout(this._passTimer);
-                this._passTimer = setTimeout(() => {
-                    this.resetPassState();
-                }, 5000);
-
-                return;
-            }
-
-            // ----------------------------------------------------
-            // 2回目クリック：確認メッセージ（コスチューム 1）のとき
-            // ----------------------------------------------------
-            if (activePassButton.currentCostume === 1) {
-                // タイマー解除＆コスチュームを 0 に戻す
-                this.resetPassState();
-
-                // パス確定処理（次の問題へ進む）
-                this.executePass();
-            }
-        }
-
-        /**
-         * パス実行時の処理
-         */
-        async executePass () {
-            const { judge } = this.getTargets();
-            const activeJudge = judge || util.target;
-            const soundBank = activeJudge?.sprite?.soundBank;
-            const sounds = activeJudge?.sprite?.sounds || [];
-            const passSound = sounds.find(s => s.name === 'pass');
-
-            this.sayFromJudge('またこんど せいかい できるように がんばろう！');
-            this.results.push({ "drill_question_id": this.questions[this.currentQuestionIndex].id, "is_correct": false })
-
-            if (passSound && soundBank) {
-                soundBank.playSound(activeJudge, passSound.soundId);
-            } 
-            setTimeout(() => {
-                this.currentQuestionIndex++;
-                this.initializeSprites();
-                this.askCurrentQuestion();
-            }, 2500);
-        }
-
         initializeSprites () {
             const stage = this.runtime.getTargetForStage();
 
@@ -757,89 +920,6 @@
             }, 100);
         }
 
-        handleTestRun (args, util) {
-            const { playButton } = this.getTargets();
-            if (!playButton) {
-                console.log('テストランボタンが見つかりません');
-                return;
-            }
-
-            // 最初のコスチューム（0）ならテスト実行、それ以外なら停止
-            if (playButton.currentCostume === 0) {
-                this.doTestRun(args, util);
-            } else {
-                this.stopTestRun(args, util);
-            }
-        }
-
-        doTestRun (args, util) {
-            const { cat, playButton } = this.getTargets();
-
-            if (cat) {
-                // 1. スプライトと変数を初期化
-                this.initializeSprites();
-
-                // 2.1. 監視したい変数名を配列で指定
-                const targetVars = ['のこりじかん', 'ランダム'];
-                const pendingVars = new Set(targetVars);
-
-                // 2.2. 前回の変数監視タイマーが残っていればクリア
-                this.stopVarCheck();
-
-                // 2.3. 100msごとに変数を監視
-                this._varCheckInterval = setInterval(() => {
-                    pendingVars.forEach(varName => {
-                        const val = this.getVariableValueByName(varName);
-                        // console.log(`Now ${varName} is `, val);
-
-                        // 初期値(-1)以外に変更されたら表示し、監視対象から外す
-                        if (val !== null && val !== -1 && val !== '-1') {
-                            this.setVariableVisible(varName, true);
-                            pendingVars.delete(varName);
-                        }
-                    });
-
-                    // すべての変数が変更・表示されたら監視終了
-                    if (pendingVars.size === 0) {
-                        this.stopVarCheck();
-                    }
-                }, 100);
-
-                // 3. 掛け声演出とハットブロックの起動処理
-                this.sayFromJudge('');
-                this.runtime.emit('SAY', playButton, 'say', 'いくよ！せーの');
-
-                if (this._testRunTimeout) clearTimeout(this._testRunTimeout);
-                this._testRunTimeout = setTimeout(() => {
-                    this.runtime.emit('SAY', playButton, 'say', '');
-                    playButton.setCostume(1);
-                    this.runtime.startHats('drill_codeStart', null, cat);
-                    this.runtime.startHats('drill_codeStart_2', null, cat);
-                }, 1500);
-            }
-        }
-
-        stopTestRun (args, util) {
-            const { playButton } = this.getTargets();
-
-            // コスチュームを 0（再生アイコン）へ戻す
-            if (playButton) {
-                playButton.setCostume(0);
-                this.runtime.emit('SAY', playButton, 'say', '');
-            }
-            // 「せーの」のタイマー停止
-            if (this._testRunTimeout) {
-                clearTimeout(this._testRunTimeout);
-                this._testRunTimeout = null;
-            }
-
-            this.stopVarCheck();
-            this.initializeSprites();
-
-            // 問題文の再掲
-            this.askCurrentQuestion();
-        }
-
         stopVarCheck () {
             if (this._varCheckInterval) {
                 clearInterval(this._varCheckInterval);
@@ -852,86 +932,6 @@
                 clearInterval(this._catBackInterval);
                 this._catBackInterval = null;
             }
-        }
-
-        async checkAnswer (args, util) {
-            const { cat, judge } = this.getTargets();
-            const activeJudge = judge || util.target;
-
-            this.stopVarCheck();
-            
-            // activeJudge.sprite から sounds と soundBank を取得
-            const sounds = activeJudge?.sprite?.sounds || [];
-            const correctSound = sounds.find(s => s.name === 'correct');
-            const wrongSound = sounds.find(s => s.name === 'wrong');
-            const soundBank = activeJudge?.sprite?.soundBank;
-
-            if (!cat) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコのスプライトが\nみつかりません');
-                return;
-            }
-
-            if (this.currentQuestionIndex >= this.questions.length) {
-                this.runtime.emit('SAY', activeJudge, 'say', 'すべての もんだいを\nクリアしています');
-                return;
-            }
-
-            const currentQuestionObj = this.questions[this.currentQuestionIndex];
-            const blocks = cat.blocks._blocks;
-
-            // ハットブロックのIDからブロック系列を取得するヘルパー関数
-            const getSequenceFromHatId = (hatId) => {
-                if (!hatId) return [];
-                const sequence = [];
-                let currentId = blocks[hatId].next;
-                while (currentId) {
-                    const block = blocks[currentId];
-                    if (!block) break;
-                    sequence.push({ opcode: block.opcode, blockId: currentId });
-                    currentId = block.next;
-                }
-                return sequence;
-            };
-
-            // 各ハットブロックの配置されているIDをすべて取得
-            const hat1Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart');
-            const hat2Ids = Object.keys(blocks).filter(id => blocks[id].opcode === 'drill_codeStart_2');
-
-            if (hat1Ids.length === 0 && hat2Ids.length === 0) {
-                // 1. どちらも置かれていない場合
-                this.runtime.emit('SAY', activeJudge, 'say', 'ネコに「ここから かきはじめる」ブロックをおいて、\nそのしたにプログラムを つくってね！');
-            } else if (hat1Ids.length > 1 || hat2Ids.length > 1) {
-                // 2. 同じハットブロックが2つ以上置かれている場合
-                this.runtime.emit('SAY', activeJudge, 'say', 'おなじ「ここから かきはじめる」ブロックが\n2つ以上 あるよ！ 1つにしてね！');
-            } else {
-                // 3. 正常系（1が1つ / 2が1つ / どちらも1つずつ）
-                // 評価（片方をメイン、他方をサブのシーケンスとして扱う）
-                const seq1 = getSequenceFromHatId(hat1Ids[0]);
-                const seq2 = getSequenceFromHatId(hat2Ids[0]);
-                const isCorrect = currentQuestionObj.question.validate(seq1, seq2, blocks)
-                               || currentQuestionObj.question.validate(seq2, seq1, blocks);
-                
-                if (isCorrect) {
-                    this.runtime.emit('SAY', activeJudge, 'say', 'せいかい！\nつぎにすすむよ！');
-                    this.results.push({ "drill_question_id": currentQuestionObj.id, "is_correct": true });
-                    activeJudge.setCostume(1);
-                    if (correctSound && soundBank) {
-                        soundBank.playSound(activeJudge, correctSound.soundId);
-                    } 
-                    this.currentQuestionIndex++;
-                } else {
-                    this.runtime.emit('SAY', activeJudge, 'say', 'ざんねん！\nもういちど かくにんしてみてね');
-                    activeJudge.setCostume(2);
-                    if (wrongSound && soundBank) {
-                        soundBank.playSound(activeJudge, wrongSound.soundId);
-                    }
-                }
-            }
-                
-            setTimeout(() => {
-                this.initializeSprites();
-                this.askCurrentQuestion();
-            }, 2500);
         }
     }
 
