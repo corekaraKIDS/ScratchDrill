@@ -247,6 +247,7 @@
             this.currentQuestionIndex = 0;
             this.questions = [];
             this.results = [];
+            this.devQuestionObjectsPromise = null;
             const projectIsLoaded = this.runtime.targets && this.runtime.targets.length > 1;
             this.projectLoadedPromise = projectIsLoaded
                 ? Promise.resolve()
@@ -347,6 +348,10 @@
         }
 
         async apiFetch (url, options = {}) {
+            if (!this.useApi) {
+                throw new Error('API access is disabled by the api query parameter.');
+            }
+
             const apiKey = this.getOrPromptApiKey();
             if (!apiKey) {
                 throw new Error('API key is not configured.');
@@ -379,10 +384,13 @@
             ).trim() || null;
             const devParam = this.getQueryParam('dev');
             this.isDev = devParam !== null && !['false', '0'].includes(devParam.toLowerCase());
+            const apiParam = this.getQueryParam('api');
+            this.useApi = apiParam === null || !['false', '0'].includes(apiParam.toLowerCase());
             this.devIframePageBaseUrl = this.getQueryParam('devIframeBaseUrl') || DEV_IFRAME_PAGE_BASE_URL;
 
             console.log('Loaded student:', this.studentName, '(ID:', this.studentId, ')');
             if (this.isDev) console.log('DEV MODE - iframe pages:', this.devIframePageBaseUrl);
+            console.log('API access:', this.useApi ? 'enabled' : 'disabled');
         }
 
         getIframePageUrl (fileName) {
@@ -417,21 +425,75 @@
             return response.json();
         }
 
+        getDevQuestionObjectsUrl () {
+            const normalizedBaseUrl = this.devIframePageBaseUrl.endsWith('/')
+                ? this.devIframePageBaseUrl
+                : `${this.devIframePageBaseUrl}/`;
+            return new URL('../dev_tools/questionObjects.json', normalizedBaseUrl).href;
+        }
+
+        async loadDevQuestionObjects () {
+            if (!this.devQuestionObjectsPromise) {
+                const dataUrl = this.getDevQuestionObjectsUrl();
+                this.devQuestionObjectsPromise = fetch(dataUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store'
+                }).then(async response => {
+                    if (!response.ok) {
+                        throw new Error(`Dev data HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (!Array.isArray(data.questionObjects)) {
+                        throw new Error('Dev data does not contain questionObjects.');
+                    }
+                    return data.questionObjects;
+                }).catch(error => {
+                    this.devQuestionObjectsPromise = null;
+                    throw error;
+                });
+            }
+
+            return this.devQuestionObjectsPromise;
+        }
+
+        async loadDrillSetData () {
+            if (!this.useApi) {
+                const questionObjects = await this.loadDevQuestionObjects();
+                return {
+                    drill_sets: questionObjects
+                        .map(item => item?.drill_set)
+                        .filter(drillSet => drillSet?.code)
+                };
+            }
+
+            return this.fetchJson(`${BASE_URL}/api/external/drill-sets`, {
+                method: 'GET',
+                headers: this.getApiHeaders()
+            });
+        }
+
+        async loadProgressData (progressUrl) {
+            return this.fetchJson(progressUrl, {
+                method: 'GET',
+                headers: this.getApiHeaders()
+            });
+        }
+
         async loadDrillMenuData () {
-            if (!this.studentId) {
+            if (!this.studentId && this.useApi) {
                 throw new Error('URLに生徒ID（studentId）がありません。');
             }
 
-            const progressUrl = `${BASE_URL}/api/external/drill-progress?student_id=${encodeURIComponent(this.studentId)}`;
+            const progressDataPromise = !this.useApi
+                ? Promise.resolve({ attempts: [] })
+                : this.loadProgressData(
+                    `${BASE_URL}/api/external/drill-progress?student_id=${encodeURIComponent(this.studentId)}`
+                );
             const [drillSetData, progressData] = await Promise.all([
-                this.fetchJson(`${BASE_URL}/api/external/drill-sets`, {
-                    method: 'GET',
-                    headers: this.getApiHeaders()
-                }),
-                this.fetchJson(progressUrl, {
-                    method: 'GET',
-                    headers: this.getApiHeaders()
-                })
+                this.loadDrillSetData(),
+                progressDataPromise
             ]);
 
             this.availableDrillSets = Array.isArray(drillSetData.drill_sets)
@@ -550,15 +612,54 @@
         }
 
         async loadQuestions (drillSetCode) {
-            const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;
-            const data = await this.fetchJson(apiUrl, {
-                method: 'GET',
-                headers: this.getApiHeaders()
-            });
+            let data;
+
+            if (!this.useApi) {
+                const questionObjects = await this.loadDevQuestionObjects();
+                data = questionObjects.find(item => item?.drill_set?.code === drillSetCode);
+                if (!data) {
+                    throw new Error(`Dev data does not contain drill set: ${drillSetCode}`);
+                }
+            } else {
+                const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;
+                data = await this.fetchJson(apiUrl, {
+                    method: 'GET',
+                    headers: this.getApiHeaders()
+                });
+            }
 
             this.drillSetId = data.drill_set?.id ?? this.drillSetId;
             this.drillSetTitle = data.drill_set?.title ?? this.drillSetTitle;
             this.questions = Object.values(data.questions || {})
+                .map(questionData => {
+                    const validateSource = questionData.question?.validate;
+                    if (typeof validateSource === 'function') return questionData;
+                    if (typeof validateSource !== 'string') {
+                        throw new Error(`Question ${questionData.id} does not have a validator.`);
+                    }
+
+                    let validate;
+                    try {
+                        const createValidator = new Function(
+                            `"use strict"; return (${validateSource});`
+                        );
+                        validate = createValidator();
+                    } catch (error) {
+                        throw new Error(`Question ${questionData.id} has an invalid validator: ${error.message}`);
+                    }
+
+                    if (typeof validate !== 'function') {
+                        throw new Error(`Question ${questionData.id} has an invalid validator.`);
+                    }
+
+                    return {
+                        ...questionData,
+                        question: {
+                            ...questionData.question,
+                            validate
+                        }
+                    };
+                })
                 .sort((a, b) => a.id - b.id);
         }
 
@@ -858,7 +959,7 @@
             this.stopCatBack();
             this.stopVarCheck();
 
-            this.sayFromJudge("けっかを そうしんちゅう");
+            this.sayFromJudge(this.useApi ? 'けっかを そうしんちゅう' : 'けっかを ひょうじちゅう');
             
             // 結果送信データの作成
             const apiUrl = `${BASE_URL}/api/external/drill-set-attempts`;
@@ -870,23 +971,25 @@
             };
             console.log("JSON to post:", JSON.stringify(payload));
 
-            // 結果のPOST送信
-            try {
-                const response = await this.apiFetch(apiUrl, {
-                    method: 'POST',
-                    headers: this.getApiHeaders(true),
-                    body: JSON.stringify(payload)
-                });
+            // APIが有効なときだけ結果をPOST送信
+            if (this.useApi) {
+                try {
+                    const response = await this.apiFetch(apiUrl, {
+                        method: 'POST',
+                        headers: this.getApiHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    console.log('[Drill] Attempt posted successfully:', resData);
+
+                } catch (error) {
+                    console.error('[Drill] Failed to post drill set attempt:', error);
                 }
-
-                const resData = await response.json();
-                console.log('[Drill] Attempt posted successfully:', resData);
-
-            } catch (error) {
-                console.error('[Drill] Failed to post drill set attempt:', error);
             }
 
             // 背景を 'clear' に切り替える
