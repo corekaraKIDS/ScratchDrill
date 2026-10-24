@@ -23,223 +23,6 @@
     const API_KEY_PREFIX = '';
     const BASE_URL = 'https://le-on-assist.online'; // APIサーバーのドメイン
 
-    // ドリルの正誤判定で使う機能をまとめたクラス
-    class DrillValidators {
-        /**
-         * くり返しや条件分岐の中身（子ブロック配列）を取得する
-         * @param {Object} block - 親ブロック
-         * @param {Object} allBlocks - ブロック全体
-         * @param {string} inputKey - 'SUBSTACK' (if/repeatの中身) または 'SUBSTACK2' (elseの中身)
-         */
-        static getInnerBlocks(block, allBlocks, inputKey = 'SUBSTACK') {
-            if (!block || !block.inputs) return [];
-            const firstBlockId = block.inputs[inputKey]?.block;
-            if (!firstBlockId) return [];
-
-            const inner = [];
-            let currId = firstBlockId;
-            while (currId && allBlocks[currId]) {
-                const current = allBlocks[currId];
-                inner.push(current);
-                currId = current.next;
-            }
-            return inner;
-        }
-
-        // メッセージブロックから送信するメッセージ名を取得
-        static getBroadcastMessage(block, allBlocks) {
-            if (!block || !block.inputs) return null;
-            const msgId = block.inputs.BROADCAST_INPUT?.block;
-            return allBlocks[msgId]?.fields?.BROADCAST_OPTION?.value || null;
-        }
-
-        // 入力インプットの表示値・数値を安全に取得するヘルパー
-        static getInputValue(block, inputName, allBlocks) {
-            const input = block?.inputs?.[inputName];
-            if (!input) return null;
-            const targetBlock = allBlocks[input.block];
-            if (!targetBlock?.fields) return null;
-            const firstKey = Object.keys(targetBlock.fields)[0];
-            return targetBlock.fields[firstKey]?.value;
-        }
-
-        // 繰り返し5歩動いて、もし端についたらはねかえる
-        static checkMoveBounceLoop(loopBlockId, allBlocks) {
-            const foreverBlock = allBlocks[loopBlockId];
-
-            const innerBlocks = this.getInnerBlocks(foreverBlock, allBlocks)
-            if (innerBlocks.length !== 2) return false;
-
-            // 順不同
-            const moveBlock = innerBlocks.find(b => b.opcode === 'motion_movesteps');
-            const bounceBlock = innerBlocks.find(b => b.opcode === 'motion_ifonedgebounce');
-            if (!moveBlock || !bounceBlock) return false;
-
-            const stepsId = moveBlock.inputs.STEPS.block;
-            return allBlocks[stepsId].fields.NUM.value === '5';
-        }
-
-        /**
-         * 「〇座標を △ずつ変える」処理を ◇回繰り返す構造かを判定
-         * @param {Object} block - 繰り返しのトップレベルブロック (allBlocks[item.blockId])
-         * @param {Object} allBlocks - すべてのブロック情報
-         * @param {'x'|'y'} axis - 軸 ('x' または 'y')
-         * @param {number|string} delta - 変化量 (例: -2, 2)
-         * @param {number|string} times - 繰り返す回数 (例: 50)
-         */
-        static checkRepeatChangeCoord(block, allBlocks, axis, delta, times) {
-            if (!block || block.opcode !== 'control_repeat') return false;
-
-            // 回数チェック
-            const timesId = block.inputs.TIMES?.block;
-            if (!timesId || allBlocks[timesId]?.fields?.NUM?.value !== String(times)) return false;
-
-            // くり返しの中身チェック (1個ちょうど)
-            const innerBlocks = this.getInnerBlocks(block, allBlocks);
-            if (innerBlocks.length !== 1) return false;
-
-            const isX = axis.toLowerCase() === 'x';
-            const expectedOpcode = isX ? 'motion_changexby' : 'motion_changeyby';
-            const inputKey = isX ? 'DX' : 'DY';
-
-            const [inner] = innerBlocks;
-            if (inner.opcode !== expectedOpcode) return false;
-
-            const deltaId = inner.inputs[inputKey]?.block;
-            return allBlocks[deltaId]?.fields?.NUM?.value === String(delta);
-        }
-
-        // 「〇〇キーが押されたら 座標を △ずつ変える」ifブロックかを判定
-        static checkIfKeyPressedMove(block, allBlocks, key, axis, delta) {
-            if (!block || block.opcode !== 'control_if' || !block.inputs) return false;
-
-            const condId = block.inputs.CONDITION?.block;
-            const condBlock = allBlocks[condId];
-            if (!condBlock || condBlock.opcode !== 'sensing_keypressed' || !condBlock.inputs) return false;
-
-            const keyId = condBlock.inputs.KEY_OPTION?.block;
-            if (allBlocks[keyId]?.fields?.KEY_OPTION?.value !== key) return false;
-
-            const inner = this.getInnerBlocks(block, allBlocks);
-            if (inner.length !== 1) return false;
-
-            const isX = axis.toLowerCase() === 'x';
-            const expectedOpcode = isX ? 'motion_changexby' : 'motion_changeyby';
-            const inputKey = isX ? 'DX' : 'DY';
-
-            const [innerBlock] = inner;
-            if (innerBlock.opcode !== expectedOpcode || !innerBlock.inputs) return false;
-
-            const deltaId = innerBlock.inputs[inputKey]?.block;
-            return allBlocks[deltaId]?.fields?.NUM?.value === String(delta);
-        }
-
-        // 「〇〇キーが押されたら 大きさを1%ずつふやす、でなければ 1%ずつ減らす」if-elseブロックかを判定
-        static checkIfElseKeyPressedChangeSize(block, allBlocks, key = 'space') {
-            if (!block || block.opcode !== 'control_if_else' || !block.inputs) return false;
-
-            // 1. 条件式（〇〇 キーがおされた）の検証
-            const condId = block.inputs.CONDITION?.block;
-            const condBlock = allBlocks[condId];
-            if (!condBlock || condBlock.opcode !== 'sensing_keypressed') return false;
-
-            const keyId = condBlock.inputs.KEY_OPTION?.block;
-            if (allBlocks[keyId]?.fields?.KEY_OPTION?.value !== key) return false;
-
-            // 2. then（もし）側: おおきさを 1 ずつかえる
-            const thenBlocks = this.getInnerBlocks(block, allBlocks, 'SUBSTACK');
-            if (thenBlocks.length !== 1 || thenBlocks[0].opcode !== 'looks_changesizeby') return false;
-            if (String(this.getInputValue(thenBlocks[0], 'CHANGE', allBlocks)) !== '1') return false;
-
-            // 3. else（でなければ）側: おおきさを -1 ずつかえる
-            const elseBlocks = this.getInnerBlocks(block, allBlocks, 'SUBSTACK2');
-            if (elseBlocks.length !== 1 || elseBlocks[0].opcode !== 'looks_changesizeby') return false;
-            if (String(this.getInputValue(elseBlocks[0], 'CHANGE', allBlocks)) !== '-1') return false;
-
-            return true;
-        }
-
-        // 〇度回すブロックかを判定 (右回り・左回り不問)
-        static checkTurn(block, allBlocks, degrees) {
-            if (!block || !block.inputs) return false;
-            if (block.opcode !== 'motion_turnright' && block.opcode !== 'motion_turnleft') return false;
-
-            const degId = block.inputs.DEGREES?.block;
-            return allBlocks[degId]?.fields?.NUM?.value === String(degrees);
-        }
-
-        // 不等号・等号の向き（正順 / 逆順）に対応した数値比較判定ヘルパー
-        // relation: 'gt' (大きければ), 'lt' (小さければ), 'eq' (等しければ)
-        static checkComparison(block, allBlocks, targetOpcode, relation, expectedValue) {
-            if (!block || !block.inputs) return false;
-
-            const val1 = block.inputs.OPERAND1?.block;
-            const val2 = block.inputs.OPERAND2?.block;
-
-            const isVal1Target = allBlocks[val1]?.opcode === targetOpcode;
-            const isVal2Target = allBlocks[val2]?.opcode === targetOpcode;
-
-            const num1 = this.getInputValue(block, 'OPERAND1', allBlocks);
-            const num2 = this.getInputValue(block, 'OPERAND2', allBlocks);
-
-            const expectedStr = String(expectedValue);
-
-            if (relation === 'gt') {
-                // [xざひょう > 100] または [100 < xざひょう]
-                if (block.opcode === 'operator_gt' && isVal1Target && String(num2) === expectedStr) return true;
-                if (block.opcode === 'operator_lt' && isVal2Target && String(num1) === expectedStr) return true;
-            } else if (relation === 'lt') {
-                // [xざひょう < 100] または [100 > xざひょう]
-                if (block.opcode === 'operator_lt' && isVal1Target && String(num2) === expectedStr) return true;
-                if (block.opcode === 'operator_gt' && isVal2Target && String(num1) === expectedStr) return true;
-            } else if (relation === 'eq' || relation === 'equals') {
-                // [xざひょう = 100] または [100 = xざひょう]
-                if (block.opcode === 'operator_equals') {
-                    if (isVal1Target && String(num2) === expectedStr) return true;
-                    if (isVal2Target && String(num1) === expectedStr) return true;
-                }
-            }
-            return false;
-        }
-
-        /**
-         * 変数の設定・変更ブロックの判定
-         * @param {Object} block - 対象のブロック
-         * @param {Object} allBlocks - ブロック全体
-         * @param {string} opcode - 'data_setvariableto' または 'data_changevariableby'
-         * @param {string} varName - 変数名 ('のこりじかん')
-         * @param {number|string} value - 値 (例: 10, -1)
-         */
-        static checkVariable(block, allBlocks, opcode, varName, value) {
-            if (!block || block.opcode !== opcode || !block.fields) return false;
-
-            const varField = block.fields.VARIABLE;
-            if (!varField || (varField.value !== varName && varField.id !== varName)) return false;
-
-            const val = this.getInputValue(block, 'VALUE', allBlocks);
-            return String(val) === String(value);
-        }
-
-        // 乱数ブロック (operator_random) の範囲判定
-        static checkRandom(block, allBlocks, from, to) {
-            if (!block || block.opcode !== 'operator_random' || !block.inputs) return false;
-            const fromVal = this.getInputValue(block, 'FROM', allBlocks);
-            const toVal = this.getInputValue(block, 'TO', allBlocks);
-            return String(fromVal) === String(from) && String(toVal) === String(to);
-        }
-
-        // 変数を「〇〇から△△までの乱数」にする判定
-        static checkSetVariableToRandom(block, allBlocks, varName, from, to) {
-            if (!block || block.opcode !== 'data_setvariableto' || !block.fields) return false;
-            const varField = block.fields.VARIABLE;
-            if (!varField || (varField.value !== varName && varField.id !== varName)) return false;
-
-            const valInputId = block.inputs?.VALUE?.block;
-            const valBlock = allBlocks[valInputId];
-            return this.checkRandom(valBlock, allBlocks, from, to);
-        }
-    }
-
     // ドリル本体
     class Scratch3Drill {
         constructor (runtime) {
@@ -247,6 +30,7 @@
             this.currentQuestionIndex = 0;
             this.questions = [];
             this.results = [];
+            this.devQuestionObjectsPromise = null;
             const projectIsLoaded = this.runtime.targets && this.runtime.targets.length > 1;
             this.projectLoadedPromise = projectIsLoaded
                 ? Promise.resolve()
@@ -347,6 +131,10 @@
         }
 
         async apiFetch (url, options = {}) {
+            if (!this.useApi) {
+                throw new Error('API access is disabled by the api query parameter.');
+            }
+
             const apiKey = this.getOrPromptApiKey();
             if (!apiKey) {
                 throw new Error('API key is not configured.');
@@ -379,10 +167,13 @@
             ).trim() || null;
             const devParam = this.getQueryParam('dev');
             this.isDev = devParam !== null && !['false', '0'].includes(devParam.toLowerCase());
+            const apiParam = this.getQueryParam('api');
+            this.useApi = apiParam === null || !['false', '0'].includes(apiParam.toLowerCase());
             this.devIframePageBaseUrl = this.getQueryParam('devIframeBaseUrl') || DEV_IFRAME_PAGE_BASE_URL;
 
             console.log('Loaded student:', this.studentName, '(ID:', this.studentId, ')');
             if (this.isDev) console.log('DEV MODE - iframe pages:', this.devIframePageBaseUrl);
+            console.log('API access:', this.useApi ? 'enabled' : 'disabled');
         }
 
         getIframePageUrl (fileName) {
@@ -417,21 +208,75 @@
             return response.json();
         }
 
+        getDevQuestionObjectsUrl () {
+            const normalizedBaseUrl = this.devIframePageBaseUrl.endsWith('/')
+                ? this.devIframePageBaseUrl
+                : `${this.devIframePageBaseUrl}/`;
+            return new URL('../dev_tools/questionObjects.json', normalizedBaseUrl).href;
+        }
+
+        async loadDevQuestionObjects () {
+            if (!this.devQuestionObjectsPromise) {
+                const dataUrl = this.getDevQuestionObjectsUrl();
+                this.devQuestionObjectsPromise = fetch(dataUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store'
+                }).then(async response => {
+                    if (!response.ok) {
+                        throw new Error(`Dev data HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (!Array.isArray(data.questionObjects)) {
+                        throw new Error('Dev data does not contain questionObjects.');
+                    }
+                    return data.questionObjects;
+                }).catch(error => {
+                    this.devQuestionObjectsPromise = null;
+                    throw error;
+                });
+            }
+
+            return this.devQuestionObjectsPromise;
+        }
+
+        async loadDrillSetData () {
+            if (!this.useApi) {
+                const questionObjects = await this.loadDevQuestionObjects();
+                return {
+                    drill_sets: questionObjects
+                        .map(item => item?.drill_set)
+                        .filter(drillSet => drillSet?.code)
+                };
+            }
+
+            return this.fetchJson(`${BASE_URL}/api/external/drill-sets`, {
+                method: 'GET',
+                headers: this.getApiHeaders()
+            });
+        }
+
+        async loadProgressData (progressUrl) {
+            return this.fetchJson(progressUrl, {
+                method: 'GET',
+                headers: this.getApiHeaders()
+            });
+        }
+
         async loadDrillMenuData () {
-            if (!this.studentId) {
+            if (!this.studentId && this.useApi) {
                 throw new Error('URLに生徒ID（studentId）がありません。');
             }
 
-            const progressUrl = `${BASE_URL}/api/external/drill-progress?student_id=${encodeURIComponent(this.studentId)}`;
+            const progressDataPromise = !this.useApi
+                ? Promise.resolve({ attempts: [] })
+                : this.loadProgressData(
+                    `${BASE_URL}/api/external/drill-progress?student_id=${encodeURIComponent(this.studentId)}`
+                );
             const [drillSetData, progressData] = await Promise.all([
-                this.fetchJson(`${BASE_URL}/api/external/drill-sets`, {
-                    method: 'GET',
-                    headers: this.getApiHeaders()
-                }),
-                this.fetchJson(progressUrl, {
-                    method: 'GET',
-                    headers: this.getApiHeaders()
-                })
+                this.loadDrillSetData(),
+                progressDataPromise
             ]);
 
             this.availableDrillSets = Array.isArray(drillSetData.drill_sets)
@@ -550,15 +395,54 @@
         }
 
         async loadQuestions (drillSetCode) {
-            const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;
-            const data = await this.fetchJson(apiUrl, {
-                method: 'GET',
-                headers: this.getApiHeaders()
-            });
+            let data;
+
+            if (!this.useApi) {
+                const questionObjects = await this.loadDevQuestionObjects();
+                data = questionObjects.find(item => item?.drill_set?.code === drillSetCode);
+                if (!data) {
+                    throw new Error(`Dev data does not contain drill set: ${drillSetCode}`);
+                }
+            } else {
+                const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;
+                data = await this.fetchJson(apiUrl, {
+                    method: 'GET',
+                    headers: this.getApiHeaders()
+                });
+            }
 
             this.drillSetId = data.drill_set?.id ?? this.drillSetId;
             this.drillSetTitle = data.drill_set?.title ?? this.drillSetTitle;
             this.questions = Object.values(data.questions || {})
+                .map(questionData => {
+                    const validateSource = questionData.question?.validate;
+                    if (typeof validateSource === 'function') return questionData;
+                    if (typeof validateSource !== 'string') {
+                        throw new Error(`Question ${questionData.id} does not have a validator.`);
+                    }
+
+                    let validate;
+                    try {
+                        const createValidator = new Function(
+                            `"use strict"; return (${validateSource});`
+                        );
+                        validate = createValidator();
+                    } catch (error) {
+                        throw new Error(`Question ${questionData.id} has an invalid validator: ${error.message}`);
+                    }
+
+                    if (typeof validate !== 'function') {
+                        throw new Error(`Question ${questionData.id} has an invalid validator.`);
+                    }
+
+                    return {
+                        ...questionData,
+                        question: {
+                            ...questionData.question,
+                            validate
+                        }
+                    };
+                })
                 .sort((a, b) => a.id - b.id);
         }
 
@@ -582,7 +466,8 @@
                 console.warn('[Drill] No questions available.');
                 return;
             }
-
+            
+            // dev mode では15秒待機（拡張機能配置のため）
             setTimeout(() => {
                 this.sayFromJudge('');
                 this.startDrill();
@@ -858,7 +743,7 @@
             this.stopCatBack();
             this.stopVarCheck();
 
-            this.sayFromJudge("けっかを そうしんちゅう");
+            this.sayFromJudge(this.useApi ? 'けっかを そうしんちゅう' : 'けっかを ひょうじちゅう');
             
             // 結果送信データの作成
             const apiUrl = `${BASE_URL}/api/external/drill-set-attempts`;
@@ -870,23 +755,25 @@
             };
             console.log("JSON to post:", JSON.stringify(payload));
 
-            // 結果のPOST送信
-            try {
-                const response = await this.apiFetch(apiUrl, {
-                    method: 'POST',
-                    headers: this.getApiHeaders(true),
-                    body: JSON.stringify(payload)
-                });
+            // APIが有効なときだけ結果をPOST送信
+            if (this.useApi) {
+                try {
+                    const response = await this.apiFetch(apiUrl, {
+                        method: 'POST',
+                        headers: this.getApiHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const resData = await response.json();
+                    console.log('[Drill] Attempt posted successfully:', resData);
+
+                } catch (error) {
+                    console.error('[Drill] Failed to post drill set attempt:', error);
                 }
-
-                const resData = await response.json();
-                console.log('[Drill] Attempt posted successfully:', resData);
-
-            } catch (error) {
-                console.error('[Drill] Failed to post drill set attempt:', error);
             }
 
             // 背景を 'clear' に切り替える
