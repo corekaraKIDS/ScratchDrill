@@ -20,7 +20,7 @@
             min-width: 320px;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
             background:
                 radial-gradient(circle at 12% 18%, #fff 0 8px, transparent 9px),
                 radial-gradient(circle at 88% 25%, #fff 0 6px, transparent 7px),
@@ -32,7 +32,7 @@
             display: grid;
             place-items: center;
             min-height: 100vh;
-            padding: 24px;
+            padding: 24px 24px 72px;
             isolation: isolate;
         }
 
@@ -64,22 +64,11 @@
         .eyebrow {
             display: inline-block;
             margin: 0 0 12px;
-            padding: 8px 22px;
-            color: #fff;
+            color: #ff7b54;
             font-size: clamp(17px, 3vw, 23px);
             font-weight: 800;
             letter-spacing: .12em;
-            background: #ff7b54;
-            border-radius: 999px;
-        }
-
-        h1 {
-            margin: 0;
-            color: #ff6b4a;
-            font-size: clamp(40px, 9vw, 74px);
-            line-height: 1.1;
-            letter-spacing: .05em;
-            text-shadow: 0 4px 0 #ffe4a8;
+            overflow-wrap: anywhere;
         }
 
         .message {
@@ -89,36 +78,11 @@
             color: #666666;
         }
 
-        .details {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-            margin: 0 auto 24px;
-        }
-
-        .detail {
-            min-width: 0;
-            padding: 13px 16px;
-            background: #fff8e8;
-            border: 2px solid #ffe0a1;
-            border-radius: 18px;
-        }
-
-        .detail-label {
-            display: block;
-            margin-bottom: 5px;
-            color: #a87538;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .detail-value {
-            display: block;
-            overflow: hidden;
+        .drill-title {
+            margin: 16px 0 24px;
             font-size: clamp(17px, 3vw, 22px);
             font-weight: 800;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
         }
 
         .stars {
@@ -158,9 +122,8 @@
         }
 
         @media (max-width: 520px) {
-            .screen { padding: 14px; }
+            .screen { padding: 14px 14px 60px; }
             .card { padding: 28px 18px; border-radius: 26px; }
-            .details { grid-template-columns: 1fr; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -175,20 +138,10 @@
         <span class="decoration" aria-hidden="true"></span>
         <span class="decoration" aria-hidden="true"></span>
 
-        <section class="card" aria-labelledby="finish-title">
-            <p class="eyebrow">おつかれさま！</p>
-            <h1 id="finish-title">けっか</h1>
+        <section class="card" aria-label="ドリルの結果">
+            <p class="eyebrow"><span id="student-name">生徒名</span>さん、おつかれさま！</p>
 
-            <div class="details">
-                <div class="detail">
-                    <span class="detail-label">せいと</span>
-                    <span class="detail-value" id="student-name">〇〇 〇〇</span>
-                </div>
-                <div class="detail">
-                    <span class="detail-label">タイトル</span>
-                    <span class="detail-value" id="drill-title">ドリルの タイトル</span>
-                </div>
-            </div>
+            <p class="drill-title" id="drill-title">ドリルのタイトル</p>
 
             <div class="stars" id="stars" aria-label="3もんちゅう 0もん せいかい">
                 <span class="star" aria-hidden="true">★</span>
