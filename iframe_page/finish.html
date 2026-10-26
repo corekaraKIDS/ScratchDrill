@@ -104,6 +104,10 @@
             border-radius: 18px;
         }
 
+        .detail:only-child {
+            grid-column: 1 / -1;
+        }
+
         .detail-label {
             display: block;
             margin-bottom: 5px;
@@ -180,9 +184,9 @@
             <h1 id="finish-title">けっか</h1>
 
             <div class="details">
-                <div class="detail">
+                <div class="detail" id="student-detail" hidden>
                     <span class="detail-label">せいと</span>
-                    <span class="detail-value" id="student-name">〇〇 〇〇</span>
+                    <span class="detail-value" id="student-name"></span>
                 </div>
                 <div class="detail">
                     <span class="detail-label">タイトル</span>
@@ -225,8 +229,15 @@
                 document.getElementById('stars').setAttribute('aria-label', scoreText);
                 document.getElementById('score').textContent = scoreText;
 
-                if (payload?.student_name) {
-                    document.getElementById('student-name').textContent = payload.student_name;
+                const studentDetail = document.getElementById('student-detail');
+                const studentName = typeof payload?.student_name === 'string'
+                    ? payload.student_name.trim()
+                    : '';
+                if (studentName) {
+                    document.getElementById('student-name').textContent = studentName;
+                    studentDetail.hidden = false;
+                } else {
+                    studentDetail.remove();
                 }
                 if (payload?.drill_set_title) {
                     document.getElementById('drill-title').textContent = payload.drill_set_title;
