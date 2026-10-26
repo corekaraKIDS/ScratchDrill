@@ -81,9 +81,26 @@
         .status.error { color: #b84738; }
 
         .list {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .category-group {
+            position: relative;
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
+        }
+
+        .category-group + .category-group::before {
+            position: absolute;
+            top: -20px;
+            right: 8px;
+            left: 8px;
+            height: 1px;
+            content: "";
+            background: #fff;
         }
 
         .drill {
@@ -97,23 +114,6 @@
             box-shadow: 0 10px 0 rgba(60, 132, 162, .12), 0 18px 38px rgba(60, 132, 162, .15);
         }
 
-        .drill-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .category {
-            display: inline-block;
-            padding: 5px 11px;
-            color: #3b8099;
-            font-size: 12px;
-            font-weight: 900;
-            background: #e3f7ff;
-            border-radius: 999px;
-        }
-
         .history-label {
             color: #7b8990;
             font-size: 12px;
@@ -121,17 +121,10 @@
         }
 
         .drill h2 {
-            margin: 14px 0 6px;
+            margin: 0 0 12px;
             color: #3d5968;
             font-size: clamp(22px, 4vw, 29px);
             line-height: 1.25;
-        }
-
-        .description {
-            min-height: 3em;
-            margin: 0 0 18px;
-            color: #687b85;
-            line-height: 1.5;
         }
 
         .progress {
@@ -143,6 +136,13 @@
             padding: 13px 15px;
             background: #fff8e7;
             border-radius: 16px;
+        }
+
+        .result-summary {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
         }
 
         .stars {
@@ -178,16 +178,11 @@
             transition: transform .12s ease, box-shadow .12s ease;
         }
 
-        .start-button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #dc5337; }
-        .start-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #dc5337; }
+        .start-button:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 0 #dc5337; }
+        .start-button:not(:disabled):active { transform: translateY(4px); box-shadow: 0 2px 0 #dc5337; }
         .start-button:focus-visible { outline: 4px solid #5abce5; outline-offset: 3px; }
-        .start-button:disabled { cursor: wait; opacity: .65; transform: none; box-shadow: 0 3px 0 #dc5337; }
-
-        @media (max-width: 650px) {
-            .header { align-items: start; flex-direction: column; gap: 14px; }
-            .list { grid-template-columns: 1fr; }
-            .description { min-height: 0; }
-        }
+        .start-button:disabled:not(.is-loading) { cursor: default; opacity: .65; }
+        .start-button.is-loading { cursor: wait; opacity: .65; transform: none; box-shadow: 0 3px 0 #dc5337; }
 
         @media (prefers-reduced-motion: reduce) {
             .start-button { transition: none; }
@@ -210,15 +205,13 @@
 
     <template id="drill-template">
         <article class="drill">
-            <div class="drill-top">
-                <span class="category"></span>
-                <span class="history-label"></span>
-            </div>
             <h2></h2>
-            <p class="description"></p>
             <div class="progress">
                 <div class="stars" aria-hidden="true"></div>
-                <span class="score"></span>
+                <div class="result-summary">
+                    <span class="history-label" hidden>まえのけっか</span>
+                    <span class="score"></span>
+                </div>
             </div>
             <button class="start-button" type="button">このドリルを はじめる</button>
         </article>
@@ -239,6 +232,8 @@
                 status.hidden = false;
                 document.querySelectorAll('.start-button').forEach(button => {
                     button.disabled = false;
+                    button.classList.remove('is-loading');
+                    button.removeAttribute('aria-busy');
                     button.textContent = 'もういちど はじめる';
                 });
             };
@@ -264,24 +259,31 @@
                 const studentId = payload?.student_id ?? '―';
                 document.getElementById('student').textContent = `${studentName}（ID: ${studentId}）`;
                 list.replaceChildren();
+                const categoryGroups = new Map();
 
                 drillSets.forEach(drillSet => {
+                    const categoryId = String(drillSet.category_id ?? '');
+                    let categoryGroup = categoryGroups.get(categoryId);
+                    if (!categoryGroup) {
+                        categoryGroup = document.createElement('div');
+                        categoryGroup.className = 'category-group';
+                        categoryGroups.set(categoryId, categoryGroup);
+                        list.appendChild(categoryGroup);
+                    }
+
                     const fragment = template.content.cloneNode(true);
                     const article = fragment.querySelector('.drill');
                     const attempt = attemptByDrillSetId.get(Number(drillSet.id));
                     const results = Array.isArray(attempt?.results) ? attempt.results : [];
                     const correctCount = results.filter(result => result.is_correct === true).length;
-                    const total = results.length;
 
-                    fragment.querySelector('.category').textContent = `カテゴリー ${drillSet.category_id}`;
-                    fragment.querySelector('.history-label').textContent = attempt ? 'まえの けっか' : 'はじめて';
                     fragment.querySelector('h2').textContent = drillSet.title || 'タイトルなし';
-                    fragment.querySelector('.description').textContent = drillSet.description || 'せつめいは ありません';
 
                     const stars = fragment.querySelector('.stars');
                     makeStars(results).forEach(star => stars.appendChild(star));
+                    fragment.querySelector('.history-label').hidden = !attempt;
                     fragment.querySelector('.score').textContent = attempt
-                        ? `${correctCount} / ${total} せいかい`
+                        ? `${correctCount}/${STAR_COUNT} せいかい`
                         : 'まだ やっていないよ';
 
                     const button = fragment.querySelector('.start-button');
@@ -290,6 +292,8 @@
                         document.querySelectorAll('.start-button').forEach(item => {
                             item.disabled = true;
                         });
+                        button.classList.add('is-loading');
+                        button.setAttribute('aria-busy', 'true');
                         button.textContent = 'よみこみちゅう...';
                         window.parent.postMessage({
                             type: 'scratch3-drill-select',
@@ -298,7 +302,7 @@
                     });
 
                     article.dataset.drillSetId = String(drillSet.id);
-                    list.appendChild(fragment);
+                    categoryGroup.appendChild(fragment);
                 });
 
                 if (drillSets.length === 0) {

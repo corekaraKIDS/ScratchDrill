@@ -30,7 +30,7 @@
             this.currentQuestionIndex = 0;
             this.questions = [];
             this.results = [];
-            this.devQuestionObjectsPromise = null;
+            this.questionObjectsPromise = null;
             const projectIsLoaded = this.runtime.targets && this.runtime.targets.length > 1;
             this.projectLoadedPromise = projectIsLoaded
                 ? Promise.resolve()
@@ -208,42 +208,55 @@
             return response.json();
         }
 
-        getDevQuestionObjectsUrl () {
-            const normalizedBaseUrl = this.devIframePageBaseUrl.endsWith('/')
-                ? this.devIframePageBaseUrl
-                : `${this.devIframePageBaseUrl}/`;
-            return new URL('../dev_tools/questionObjects.json', normalizedBaseUrl).href;
+        getQuestionObjectsUrl () {
+            return this.getIframePageUrl('../dev_tools/questionObjects.json');
         }
 
-        async loadDevQuestionObjects () {
-            if (!this.devQuestionObjectsPromise) {
-                const dataUrl = this.getDevQuestionObjectsUrl();
-                this.devQuestionObjectsPromise = fetch(dataUrl, {
+        async loadQuestionObjects () {
+            if (!this.questionObjectsPromise) {
+                const dataUrl = this.getQuestionObjectsUrl();
+                this.questionObjectsPromise = fetch(dataUrl, {
                     method: 'GET',
                     headers: { 'Accept': 'application/json' },
                     cache: 'no-store'
                 }).then(async response => {
                     if (!response.ok) {
-                        throw new Error(`Dev data HTTP error! status: ${response.status}`);
+                        throw new Error(`Question data HTTP error! status: ${response.status}`);
                     }
 
                     const data = await response.json();
                     if (!Array.isArray(data.questionObjects)) {
-                        throw new Error('Dev data does not contain questionObjects.');
+                        throw new Error('Question data does not contain questionObjects.');
                     }
-                    return data.questionObjects;
+                    return data.questionObjects.map((item, index) => {
+                        if (!item?.drill_set) return item;
+
+                        const questions = Object.values(item.questions || {});
+                        const questionDrillSetId = questions.find(
+                            question => question?.drill_set_id !== undefined && question?.drill_set_id !== null
+                        )?.drill_set_id;
+
+                        return {
+                            ...item,
+                            drill_set: {
+                                ...item.drill_set,
+                                id: item.drill_set.id ?? questionDrillSetId ?? index + 1,
+                                code: item.drill_set.code || `local-${index + 1}`
+                            }
+                        };
+                    });
                 }).catch(error => {
-                    this.devQuestionObjectsPromise = null;
+                    this.questionObjectsPromise = null;
                     throw error;
                 });
             }
 
-            return this.devQuestionObjectsPromise;
+            return this.questionObjectsPromise;
         }
 
         async loadDrillSetData () {
             if (!this.useApi) {
-                const questionObjects = await this.loadDevQuestionObjects();
+                const questionObjects = await this.loadQuestionObjects();
                 return {
                     drill_sets: questionObjects
                         .map(item => item?.drill_set)
@@ -304,7 +317,7 @@
             const frame = document.createElement('iframe');
             frame.id = 'scratch3-drill-start-screen';
             frame.title = 'ドリルをえらぶ';
-            frame.src = this.getIframePageUrl('start.html');
+            frame.src = this.getIframePageUrl(this.useApi ? 'start.html' : 'start_simple.html');
             const iframePageOrigin = new URL(frame.src).origin;
             Object.assign(frame.style, {
                 position: 'fixed',
@@ -398,10 +411,10 @@
             let data;
 
             if (!this.useApi) {
-                const questionObjects = await this.loadDevQuestionObjects();
+                const questionObjects = await this.loadQuestionObjects();
                 data = questionObjects.find(item => item?.drill_set?.code === drillSetCode);
                 if (!data) {
-                    throw new Error(`Dev data does not contain drill set: ${drillSetCode}`);
+                    throw new Error(`Question data does not contain drill set: ${drillSetCode}`);
                 }
             } else {
                 const apiUrl = `${BASE_URL}/api/external/drill-sets/${encodeURIComponent(drillSetCode)}/questions`;

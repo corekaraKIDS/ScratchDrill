@@ -78,6 +78,36 @@
             color: #666666;
         }
 
+        .details {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 0 auto 24px;
+        }
+
+        .detail {
+            min-width: 0;
+            padding: 13px 16px;
+            background: #fff8e8;
+            border: 2px solid #ffe0a1;
+            border-radius: 18px;
+        }
+
+        .detail:only-child {
+            grid-column: 1 / -1;
+        }
+
+        .detail-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #a87538;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .detail-value {
+            display: block;
+            overflow: hidden;
         .drill-title {
             margin: 16px 0 24px;
             font-size: clamp(17px, 3vw, 22px);
@@ -138,6 +168,20 @@
         <span class="decoration" aria-hidden="true"></span>
         <span class="decoration" aria-hidden="true"></span>
 
+        <section class="card" aria-labelledby="finish-title">
+            <p class="eyebrow">おつかれさま！</p>
+            <h1 id="finish-title">けっか</h1>
+
+            <div class="details">
+                <div class="detail" id="student-detail" hidden>
+                    <span class="detail-label">せいと</span>
+                    <span class="detail-value" id="student-name"></span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">タイトル</span>
+                    <span class="detail-value" id="drill-title">ドリルの タイトル</span>
+                </div>
+            </div>
         <section class="card" aria-label="ドリルの結果">
             <p class="eyebrow"><span id="student-name">生徒名</span>さん、おつかれさま！</p>
 
@@ -178,8 +222,15 @@
                 document.getElementById('stars').setAttribute('aria-label', scoreText);
                 document.getElementById('score').textContent = scoreText;
 
-                if (payload?.student_name) {
-                    document.getElementById('student-name').textContent = payload.student_name;
+                const studentDetail = document.getElementById('student-detail');
+                const studentName = typeof payload?.student_name === 'string'
+                    ? payload.student_name.trim()
+                    : '';
+                if (studentName) {
+                    document.getElementById('student-name').textContent = studentName;
+                    studentDetail.hidden = false;
+                } else {
+                    studentDetail.remove();
                 }
                 if (payload?.drill_set_title) {
                     document.getElementById('drill-title').textContent = payload.drill_set_title;
