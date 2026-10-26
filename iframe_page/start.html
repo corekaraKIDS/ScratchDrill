@@ -178,10 +178,11 @@
             transition: transform .12s ease, box-shadow .12s ease;
         }
 
-        .start-button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #dc5337; }
-        .start-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #dc5337; }
+        .start-button:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 0 #dc5337; }
+        .start-button:not(:disabled):active { transform: translateY(4px); box-shadow: 0 2px 0 #dc5337; }
         .start-button:focus-visible { outline: 4px solid #5abce5; outline-offset: 3px; }
-        .start-button:disabled { cursor: wait; opacity: .65; transform: none; box-shadow: 0 3px 0 #dc5337; }
+        .start-button:disabled:not(.is-loading) { cursor: default; opacity: .65; }
+        .start-button.is-loading { cursor: wait; opacity: .65; transform: none; box-shadow: 0 3px 0 #dc5337; }
 
         @media (max-width: 650px) {
             .header { align-items: start; flex-direction: column; gap: 14px; }
@@ -239,6 +240,8 @@
                 status.hidden = false;
                 document.querySelectorAll('.start-button').forEach(button => {
                     button.disabled = false;
+                    button.classList.remove('is-loading');
+                    button.removeAttribute('aria-busy');
                     button.textContent = 'もういちど はじめる';
                 });
             };
@@ -290,6 +293,8 @@
                         document.querySelectorAll('.start-button').forEach(item => {
                             item.disabled = true;
                         });
+                        button.classList.add('is-loading');
+                        button.setAttribute('aria-busy', 'true');
                         button.textContent = 'よみこみちゅう...';
                         window.parent.postMessage({
                             type: 'scratch3-drill-select',
